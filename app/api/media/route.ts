@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { deleteObject } from "@/lib/s3";
+import { reverseGeocode } from "@/lib/google/geocoding";
 
 const createMediaSchema = z.object({
   s3Key: z.string().min(1),
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { s3Key, pageId, type, caption, location, dateTaken } =
+    const { s3Key, pageId, type, caption, location, dateTaken, gpsCoordinates } =
       parsed.data;
 
     // Verify page exists
@@ -43,6 +44,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
     }
 
+    // If we have GPS coordinates, try to reverse geocode to get a location name
+    let resolvedLocation = location;
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+
+    if (gpsCoordinates) {
+      latitude = gpsCoordinates.latitude;
+      longitude = gpsCoordinates.longitude;
+
+      // Only reverse geocode if no location was explicitly provided
+      if (!location) {
+        const geocoded = await reverseGeocode(latitude, longitude);
+        if (geocoded) {
+          resolvedLocation = geocoded.location;
+        }
+      }
+    }
+
     // Create media record (url field is not stored - we generate presigned URLs on demand)
     const media = await db.media.create({
       data: {
@@ -51,7 +70,9 @@ export async function POST(request: NextRequest) {
         pageId,
         type,
         caption,
-        location,
+        location: resolvedLocation,
+        latitude,
+        longitude,
         dateTaken: dateTaken ? new Date(dateTaken) : null,
       },
     });

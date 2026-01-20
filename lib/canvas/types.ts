@@ -83,6 +83,8 @@ export interface MediaItem {
   s3Key: string;
   caption: string | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   dateTaken: string | null;
 }
 

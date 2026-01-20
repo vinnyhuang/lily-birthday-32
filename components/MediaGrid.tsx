@@ -20,6 +20,8 @@ export interface MediaItem {
   url: string;
   caption: string | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   dateTaken: string | null;
 }
 

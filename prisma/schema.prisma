@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -22,32 +19,34 @@ model Guest {
   id            String      @id @default(cuid())
   name          String
   inviteTokenId String      @unique
-  inviteToken   InviteToken @relation(fields: [inviteTokenId], references: [id])
   createdAt     DateTime    @default(now())
+  inviteToken   InviteToken @relation(fields: [inviteTokenId], references: [id])
   page          Page?
 }
 
 model Page {
   id         String   @id @default(cuid())
   guestId    String   @unique
-  guest      Guest    @relation(fields: [guestId], references: [id])
-  layoutType String   @default("grid") // grid, collage, hero, freeform
-  canvasData Json?    // Store Fabric.js/Konva.js state
+  layoutType String   @default("grid")
+  canvasData Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   media      Media[]
+  guest      Guest    @relation(fields: [guestId], references: [id])
 }
 
 model Media {
   id        String    @id @default(cuid())
   pageId    String
-  page      Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  type      String    // "photo" or "video"
+  type      String
   s3Key     String
-  url       String    // Full S3 URL
+  url       String
   caption   String?
-  location  String?   // Place name from Google Places
-  dateTaken DateTime? // From EXIF or user input
-  position  Json?     // {x, y, width, height, rotation} for canvas
+  location  String?
+  dateTaken DateTime?
+  position  Json?
   createdAt DateTime  @default(now())
+  latitude  Float?
+  longitude Float?
+  page      Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { MediaUploader } from "@/components/MediaUploader";
 import { MediaGrid } from "@/components/MediaGrid";
+import { PhotoMap } from "@/components/PhotoMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CanvasData, MediaItem } from "@/lib/canvas/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -181,14 +182,17 @@ export default function PageBuilder() {
           />
         </section>
 
-        {/* Tabs for Photos and Canvas */}
+        {/* Tabs for Photos, Canvas, and Map */}
         <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="photos">
               My Photos ({pageData.media.length})
             </TabsTrigger>
             <TabsTrigger value="canvas">
               Scrapbook Page
+            </TabsTrigger>
+            <TabsTrigger value="map">
+              Map View
             </TabsTrigger>
           </TabsList>
 
@@ -224,6 +228,29 @@ export default function PageBuilder() {
                 initialCanvasData={pageData.canvasData}
                 media={pageData.media}
                 onSave={handleSaveCanvas}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Map View Tab */}
+          <TabsContent value="map" className="mt-6">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                See where your photos were taken on a map. Photos with GPS data from your camera will appear automatically.
+              </p>
+              <PhotoMap
+                photos={pageData.media
+                  .filter((m): m is MediaItem & { latitude: number; longitude: number } =>
+                    m.type === "photo" && m.latitude !== null && m.longitude !== null
+                  )
+                  .map((m) => ({
+                    id: m.id,
+                    url: m.url,
+                    caption: m.caption,
+                    location: m.location,
+                    latitude: m.latitude,
+                    longitude: m.longitude,
+                  }))}
               />
             </div>
           </TabsContent>

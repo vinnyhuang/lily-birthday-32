@@ -3,19 +3,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useGoogleMaps } from "@/lib/google/useGoogleMaps";
 
 interface LocationAutocompleteProps {
   value: string;
   onChange: (location: string) => void;
   placeholder?: string;
-}
-
-// Declare google namespace for TypeScript
-declare global {
-  interface Window {
-    google?: typeof google;
-    initGooglePlaces?: () => void;
-  }
 }
 
 export function LocationAutocomplete({
@@ -25,41 +18,8 @@ export function LocationAutocomplete({
 }: LocationAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { isLoaded } = useGoogleMaps();
   const [inputValue, setInputValue] = useState(value);
-
-  // Load Google Places script
-  useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
-
-    if (!apiKey) {
-      console.debug("Google Places API key not configured");
-      return;
-    }
-
-    // Check if already loaded
-    if (window.google?.maps?.places) {
-      setIsLoaded(true);
-      return;
-    }
-
-    // Create callback for script load
-    window.initGooglePlaces = () => {
-      setIsLoaded(true);
-    };
-
-    // Load the script
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGooglePlaces`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    return () => {
-      // Clean up callback
-      delete window.initGooglePlaces;
-    };
-  }, []);
 
   // Initialize autocomplete
   useEffect(() => {
@@ -104,8 +64,8 @@ export function LocationAutocomplete({
     onChange(inputValue);
   }, [inputValue, onChange]);
 
-  // If no API key, render a simple input
-  if (!process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY) {
+  // If not loaded yet (no API key or still loading), render a simple input
+  if (!isLoaded) {
     return (
       <div className="space-y-2">
         <Label htmlFor="location">Location</Label>
