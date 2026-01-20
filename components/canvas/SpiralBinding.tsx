@@ -1,6 +1,6 @@
 "use client";
 
-import { Group, Rect, Ellipse, Line } from "react-konva";
+import { Group, Rect, Circle, Arc } from "react-konva";
 
 interface SpiralBindingProps {
   canvasWidth: number;
@@ -9,111 +9,119 @@ interface SpiralBindingProps {
 
 export function SpiralBinding({ canvasWidth, canvasHeight }: SpiralBindingProps) {
   const centerX = canvasWidth / 2;
-  const bindingWidth = 24;
-  const ringSpacing = 40;
-  const ringCount = Math.floor((canvasHeight - 60) / ringSpacing);
-  const startY = (canvasHeight - (ringCount - 1) * ringSpacing) / 2;
+  const ringSpacing = 28;
+  const topPadding = 20;
+  const ringCount = Math.floor((canvasHeight - topPadding * 2) / ringSpacing);
+  const startY = topPadding;
+
+  // Ring dimensions
+  const ringRadiusX = 10;
+  const holeRadius = 4;
+  const holeOffsetX = 10; // Distance from center to each hole
 
   // Generate ring positions
   const rings = Array.from({ length: ringCount }, (_, i) => startY + i * ringSpacing);
 
+  const stripWidth = 6;
+  const foldShadowWidth = 14;
+
   return (
     <Group listening={false}>
-      {/* Shadow under binding */}
+      {/* Narrow center strip matching page background */}
       <Rect
-        x={centerX - bindingWidth / 2 - 4}
+        x={centerX - stripWidth / 2}
         y={0}
-        width={bindingWidth + 8}
+        width={stripWidth}
         height={canvasHeight}
-        fill="rgba(0,0,0,0.08)"
+        fill="#FDF8F3"
       />
 
-      {/* Main binding strip (dark gray) */}
-      <Rect
-        x={centerX - bindingWidth / 2}
-        y={0}
-        width={bindingWidth}
-        height={canvasHeight}
-        fill="#3D3D3D"
-      />
-
-      {/* Binding edge highlights */}
-      <Line
-        points={[centerX - bindingWidth / 2, 0, centerX - bindingWidth / 2, canvasHeight]}
-        stroke="#2D2D2D"
-        strokeWidth={1}
-      />
-      <Line
-        points={[centerX + bindingWidth / 2, 0, centerX + bindingWidth / 2, canvasHeight]}
-        stroke="#4D4D4D"
-        strokeWidth={1}
-      />
-
-      {/* Spiral rings */}
+      {/* Ring holes and rings */}
       {rings.map((y, index) => (
         <Group key={index}>
-          {/* Ring hole in binding */}
-          <Ellipse
+          {/* Left hole (dark circle where ring passes through) */}
+          <Circle
+            x={centerX - holeOffsetX}
+            y={y}
+            radius={holeRadius}
+            fill="#2A2522"
+          />
+          {/* Left hole inner shadow */}
+          <Circle
+            x={centerX - holeOffsetX}
+            y={y - 0.5}
+            radius={holeRadius - 1}
+            fill="#1A1815"
+          />
+
+          {/* Right hole (dark circle where ring passes through) */}
+          <Circle
+            x={centerX + holeOffsetX}
+            y={y}
+            radius={holeRadius}
+            fill="#2A2522"
+          />
+          {/* Right hole inner shadow */}
+          <Circle
+            x={centerX + holeOffsetX}
+            y={y - 0.5}
+            radius={holeRadius - 1}
+            fill="#1A1815"
+          />
+
+          {/* Top half of ring - main coil (180 degrees, facing up) */}
+          <Arc
             x={centerX}
             y={y}
-            radiusX={8}
-            radiusY={4}
-            fill="#2A2A2A"
+            innerRadius={ringRadiusX - 1.5}
+            outerRadius={ringRadiusX + 1.5}
+            angle={180}
+            rotation={180}
+            fill="#B8B8B8"
           />
 
-          {/* Single metal coil ring */}
-          <Ellipse
+          {/* Ring highlight (metallic shine on top) */}
+          <Arc
             x={centerX}
-            y={y}
-            radiusX={14}
-            radiusY={7}
-            stroke="#B0B0B0"
-            strokeWidth={3}
-            fill="transparent"
+            y={y - 0.5}
+            innerRadius={ringRadiusX - 1}
+            outerRadius={ringRadiusX}
+            angle={160}
+            rotation={190}
+            fill="#D8D8D8"
           />
 
-          {/* Coil highlight (metallic shine) */}
-          <Ellipse
+          {/* Ring shadow (darker edge at bottom of visible arc) */}
+          <Arc
             x={centerX}
-            y={y - 1}
-            radiusX={12}
-            radiusY={5}
-            stroke="#D8D8D8"
-            strokeWidth={1}
-            fill="transparent"
-          />
-
-          {/* Coil shadow */}
-          <Ellipse
-            x={centerX}
-            y={y + 2}
-            radiusX={13}
-            radiusY={6}
-            stroke="#888888"
-            strokeWidth={1}
-            fill="transparent"
+            y={y + 0.5}
+            innerRadius={ringRadiusX + 0.5}
+            outerRadius={ringRadiusX + 1.5}
+            angle={140}
+            rotation={200}
+            fill="#888888"
           />
         </Group>
       ))}
 
       {/* Page fold shadows (subtle crease effect near binding) */}
       <Rect
-        x={centerX - bindingWidth / 2 - 20}
+        x={centerX - stripWidth / 2 - foldShadowWidth}
         y={0}
-        width={20}
+        width={foldShadowWidth}
         height={canvasHeight}
         fillLinearGradientStartPoint={{ x: 0, y: 0 }}
-        fillLinearGradientEndPoint={{ x: 20, y: 0 }}
-        fillLinearGradientColorStops={[0, "rgba(0,0,0,0.03)", 1, "rgba(0,0,0,0)"]}
+        fillLinearGradientEndPoint={{ x: foldShadowWidth, y: 0 }}
+        fillLinearGradientColorStops={[0, "rgba(0,0,0,0.04)", 1, "rgba(0,0,0,0)"]}
       />
       <Rect
-        x={centerX + bindingWidth / 2}
+        x={centerX + stripWidth / 2}
         y={0}
-        width={20}
+        width={foldShadowWidth}
         height={canvasHeight}
         fillLinearGradientStartPoint={{ x: 0, y: 0 }}
-        fillLinearGradientEndPoint={{ x: 20, y: 0 }}
-        fillLinearGradientColorStops={[0, "rgba(0,0,0,0)", 1, "rgba(0,0,0,0.03)"]}
+        fillLinearGradientEndPoint={{ x: foldShadowWidth, y: 0 }}
+        fillLinearGradientColorStops={[0, "rgba(0,0,0,0)", 1, "rgba(0,0,0,0.04)"]}
       />
     </Group>
   );
