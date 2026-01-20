@@ -27,7 +27,7 @@ export interface MediaItem {
 
 interface MediaGridProps {
   media: MediaItem[];
-  onUpdate: (id: string, data: { caption?: string; location?: string }) => void;
+  onUpdate: (id: string, data: { caption?: string; location?: string; latitude?: number; longitude?: number }) => void;
   onDelete: (id: string) => void;
 }
 
@@ -35,6 +35,7 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [editCaption, setEditCaption] = useState("");
   const [editLocation, setEditLocation] = useState("");
+  const [editCoordinates, setEditCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -42,6 +43,11 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
     setSelectedMedia(item);
     setEditCaption(item.caption || "");
     setEditLocation(item.location || "");
+    setEditCoordinates(
+      item.latitude && item.longitude
+        ? { latitude: item.latitude, longitude: item.longitude }
+        : null
+    );
   };
 
   const handleSave = async () => {
@@ -50,6 +56,8 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
     await onUpdate(selectedMedia.id, {
       caption: editCaption || undefined,
       location: editLocation || undefined,
+      latitude: editCoordinates?.latitude,
+      longitude: editCoordinates?.longitude,
     });
     setIsSaving(false);
     setSelectedMedia(null);
@@ -124,8 +132,44 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
       <Dialog
         open={!!selectedMedia}
         onOpenChange={(open) => !open && setSelectedMedia(null)}
+        modal={false}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent
+          className="max-w-2xl"
+          hideOverlay
+          onClick={(e) => {
+            // Close autocomplete dropdown when clicking inside dialog but outside the dropdown
+            const target = e.target as HTMLElement;
+            if (!target.closest('.pac-container') && !target.closest('input[id="location"]')) {
+              // Blur the location input to close autocomplete
+              const locationInput = document.getElementById('location') as HTMLInputElement;
+              if (locationInput && document.activeElement === locationInput) {
+                locationInput.blur();
+              }
+            }
+          }}
+          onInteractOutside={(e) => {
+            // Prevent dialog from closing when Google Places autocomplete is visible
+            // Check ALL pac-containers since Google may create multiple
+            const pacContainers = document.querySelectorAll('.pac-container');
+            let hasVisibleDropdown = false;
+            pacContainers.forEach(container => {
+              const style = window.getComputedStyle(container);
+              if (style.display !== 'none' && style.visibility !== 'hidden') {
+                hasVisibleDropdown = true;
+              }
+            });
+
+            if (hasVisibleDropdown) {
+              e.preventDefault();
+              // Blur the input to close the autocomplete dropdown
+              const locationInput = document.getElementById('location') as HTMLInputElement;
+              if (locationInput) {
+                locationInput.blur();
+              }
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit Memory</DialogTitle>
           </DialogHeader>
@@ -169,7 +213,12 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
 
                 <LocationAutocomplete
                   value={editLocation}
-                  onChange={setEditLocation}
+                  onChange={(location, coordinates) => {
+                    setEditLocation(location);
+                    if (coordinates) {
+                      setEditCoordinates(coordinates);
+                    }
+                  }}
                   placeholder="Where was this taken?"
                 />
               </div>

@@ -9,6 +9,7 @@ import { CanvasText } from "./CanvasText";
 import { CanvasBackground } from "./CanvasBackground";
 import { AlignmentGuides } from "./AlignmentGuides";
 import { FramePicker } from "./FramePicker";
+import { SpiralBinding } from "./SpiralBinding";
 import { useCanvasState } from "./useCanvasState";
 import { useAlignmentGuides } from "./useAlignmentGuides";
 import {
@@ -83,8 +84,8 @@ export function CanvasEditor({
         // Only update if container is visible (not hidden by tab switching)
         // This prevents Konva errors when forceMount renders the canvas while hidden
         if (containerWidth > 0) {
-          const maxWidth = Math.min(containerWidth, 800);
-          const height = maxWidth * 1.25; // 4:5 aspect ratio for scrapbook page
+          const maxWidth = Math.min(containerWidth, 1200);
+          const height = maxWidth * (9 / 16); // 16:9 aspect ratio for two-page spread
           setDimensions({ width: maxWidth, height });
         }
       }
@@ -372,7 +373,7 @@ export function CanvasEditor({
       <div
         ref={containerRef}
         className="relative bg-white rounded-xl shadow-lg overflow-hidden mx-auto"
-        style={{ maxWidth: 800 }}
+        style={{ maxWidth: 1200 }}
       >
         <Stage
           width={dimensions.width}
@@ -441,6 +442,14 @@ export function CanvasEditor({
 
             {/* Alignment Guides */}
             <AlignmentGuides guides={guides} />
+          </Layer>
+
+          {/* Spiral Binding Overlay Layer */}
+          <Layer listening={false}>
+            <SpiralBinding
+              canvasWidth={canvasData.width}
+              canvasHeight={canvasData.height}
+            />
           </Layer>
         </Stage>
 

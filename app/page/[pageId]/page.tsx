@@ -16,7 +16,7 @@ const CanvasEditor = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="aspect-[4/5] max-w-[800px] mx-auto bg-muted rounded-xl flex items-center justify-center">
+      <div className="aspect-[16/9] max-w-[1200px] mx-auto bg-muted rounded-xl flex items-center justify-center">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-muted-foreground">Loading canvas...</p>
@@ -85,7 +85,7 @@ export default function PageBuilder() {
   );
 
   const handleUpdateMedia = useCallback(
-    async (mediaId: string, data: { caption?: string; location?: string }) => {
+    async (mediaId: string, data: { caption?: string; location?: string; latitude?: number; longitude?: number }) => {
       try {
         const response = await fetch("/api/media", {
           method: "PATCH",
@@ -161,8 +161,8 @@ export default function PageBuilder() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="py-8 px-4">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="page-title">
@@ -172,15 +172,6 @@ export default function PageBuilder() {
             Share your favorite memories and photos with Lily for her 32nd birthday
           </p>
         </div>
-
-        {/* Upload Section */}
-        <section>
-          <MediaUploader
-            guestId={pageData.guest.id}
-            pageId={pageData.id}
-            onUploadComplete={fetchPage}
-          />
-        </section>
 
         {/* Tabs for Photos, Canvas, and Map */}
         <Tabs defaultValue="photos" className="w-full">
@@ -197,7 +188,13 @@ export default function PageBuilder() {
           </TabsList>
 
           {/* Photo Manager Tab */}
-          <TabsContent value="photos" className="mt-6">
+          <TabsContent value="photos" className="mt-6 space-y-6">
+            {/* Upload Section - only shows when My Photos tab is active */}
+            <MediaUploader
+              guestId={pageData.guest.id}
+              pageId={pageData.id}
+              onUploadComplete={fetchPage}
+            />
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Click on a photo to add a caption, location, or story. These details will be saved with your memories.
@@ -234,25 +231,23 @@ export default function PageBuilder() {
 
           {/* Map View Tab */}
           <TabsContent value="map" className="mt-6">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                See where your photos were taken on a map. Photos with GPS data from your camera will appear automatically.
-              </p>
-              <PhotoMap
-                photos={pageData.media
-                  .filter((m): m is MediaItem & { latitude: number; longitude: number } =>
-                    m.type === "photo" && m.latitude !== null && m.longitude !== null
-                  )
-                  .map((m) => ({
-                    id: m.id,
-                    url: m.url,
-                    caption: m.caption,
-                    location: m.location,
-                    latitude: m.latitude,
-                    longitude: m.longitude,
-                  }))}
-              />
-            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              See where your photos were taken on a map. Photos with GPS data from your camera will appear automatically.
+            </p>
+            <PhotoMap
+              photos={pageData.media
+                .filter((m): m is MediaItem & { latitude: number; longitude: number } =>
+                  m.type === "photo" && m.latitude !== null && m.longitude !== null
+                )
+                .map((m) => ({
+                  id: m.id,
+                  url: m.url,
+                  caption: m.caption,
+                  location: m.location,
+                  latitude: m.latitude,
+                  longitude: m.longitude,
+                }))}
+            />
           </TabsContent>
         </Tabs>
       </div>

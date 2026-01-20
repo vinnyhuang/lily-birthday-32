@@ -113,9 +113,9 @@ export interface MediaItem {
   dateTaken: string | null;
 }
 
-// Default canvas dimensions
-export const DEFAULT_CANVAS_WIDTH = 800;
-export const DEFAULT_CANVAS_HEIGHT = 1000;
+// Default canvas dimensions (16:9 landscape for two-page spread)
+export const DEFAULT_CANVAS_WIDTH = 1600;
+export const DEFAULT_CANVAS_HEIGHT = 900;
 
 // Create a new canvas data object
 export function createDefaultCanvasData(): CanvasData {

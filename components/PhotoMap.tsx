@@ -208,8 +208,8 @@ export function PhotoMap({ photos, className = "" }: PhotoMapProps) {
       <Card className="overflow-hidden">
         <div
           ref={mapRef}
-          className="w-full h-[400px]"
-          style={{ minHeight: "300px" }}
+          className="w-full h-[800px]"
+          style={{ minHeight: "600px" }}
         />
       </Card>
 
