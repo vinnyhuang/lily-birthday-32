@@ -22,8 +22,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Birthday Scrapbook",
-  description: "A collaborative digital scrapbook for birthday celebrations",
+  title: "Lily's 32nd Birthday Scrapbook",
+  description: "A collaborative scrapbook of memories for Lily's 32nd birthday",
 };
 
 export default function RootLayout({

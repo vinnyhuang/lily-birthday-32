@@ -57,7 +57,7 @@ export function GuestNameForm({ token, onSuccess }: GuestNameFormProps) {
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-display text-primary">Welcome!</CardTitle>
         <CardDescription className="text-base">
-          Enter your name to start creating your scrapbook page
+          Enter your name to create your page for Lily&apos;s birthday
         </CardDescription>
       </CardHeader>
       <CardContent>

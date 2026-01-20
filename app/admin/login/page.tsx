@@ -49,9 +49,9 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md bg-white">
         <CardHeader className="text-center">
           <div className="text-5xl mb-2">🎂</div>
-          <CardTitle className="page-title">Admin Login</CardTitle>
+          <CardTitle className="page-title">Lily&apos;s 32nd</CardTitle>
           <CardDescription className="text-base mt-2">
-            Enter the admin password to access the dashboard
+            Enter the admin password to manage the scrapbook
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -23,7 +23,7 @@ export function AdminNav() {
     <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-sm border-b border-[#E8DFD6] z-50 shadow-sm">
       <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="font-display text-2xl text-primary">🎂 Admin</span>
+          <span className="font-display text-2xl text-primary">🎂 Lily&apos;s 32nd</span>
           <div className="flex gap-1">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>

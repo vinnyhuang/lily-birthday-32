@@ -166,10 +166,10 @@ export default function PageBuilder() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="page-title">
-            {pageData.guest.name}&apos;s Memories
+            {pageData.guest.name}&apos;s Page for Lily
           </h1>
           <p className="text-muted-foreground text-lg">
-            Upload photos, add details, and design your scrapbook page
+            Share your favorite memories and photos with Lily for her 32nd birthday
           </p>
         </div>
 

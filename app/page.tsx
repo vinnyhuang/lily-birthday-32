@@ -11,11 +11,11 @@ export default function Home() {
           <div className="space-y-4">
             <div className="text-7xl mb-4">🎂</div>
             <h1 className="page-title text-5xl md:text-6xl">
-              Birthday Scrapbook
+              Lily&apos;s 32nd Birthday
             </h1>
             <p className="text-xl text-muted-foreground">
-              A collaborative digital scrapbook where friends and family can
-              share their favorite memories and photos
+              A collaborative scrapbook where friends and family share
+              their favorite memories with Lily
             </p>
           </div>
 
@@ -23,11 +23,10 @@ export default function Home() {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <p className="text-lg">
-                  Have an invite link? Click it to start creating your page!
+                  Have an invite link? Click it to create your page for Lily!
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  If you&apos;re the host, access the admin dashboard to
-                  generate invite links.
+                  Share your favorite photos, stories, and memories to celebrate Lily&apos;s special day.
                 </p>
               </div>
             </CardContent>
@@ -55,7 +54,7 @@ export default function Home() {
                 </div>
                 <h3 className="font-semibold mb-2 text-lg">Get Your Invite</h3>
                 <p className="text-sm text-muted-foreground">
-                  The host shares a unique invite link with you
+                  You&apos;ll receive a unique invite link to join
                 </p>
               </CardContent>
             </Card>
@@ -64,9 +63,9 @@ export default function Home() {
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[#E8F0E9] flex items-center justify-center">
                   <span className="text-2xl font-display text-[#5A7A5E]">2</span>
                 </div>
-                <h3 className="font-semibold mb-2 text-lg">Upload Memories</h3>
+                <h3 className="font-semibold mb-2 text-lg">Share Memories</h3>
                 <p className="text-sm text-muted-foreground">
-                  Add your favorite photos and videos with captions
+                  Upload your favorite photos with Lily and add stories
                 </p>
               </CardContent>
             </Card>
@@ -75,9 +74,9 @@ export default function Home() {
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[#FBF5E6] flex items-center justify-center">
                   <span className="text-2xl font-display text-[#8B7028]">3</span>
                 </div>
-                <h3 className="font-semibold mb-2 text-lg">Celebrate Together</h3>
+                <h3 className="font-semibold mb-2 text-lg">Celebrate Lily</h3>
                 <p className="text-sm text-muted-foreground">
-                  Everyone&apos;s pages come together in one special collection
+                  All pages come together as a gift for Lily&apos;s birthday
                 </p>
               </CardContent>
             </Card>
@@ -87,7 +86,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="py-8 px-4 text-center text-sm text-muted-foreground">
-        <p>Made with love for birthday celebrations 💝</p>
+        <p>Made with love for Lily&apos;s 32nd 💝</p>
       </footer>
     </div>
   );

@@ -25,9 +25,9 @@ export default async function AdminDashboard() {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <div>
-        <h1 className="page-title">Dashboard</h1>
+        <h1 className="page-title">Lily&apos;s 32nd Birthday</h1>
         <p className="text-muted-foreground mt-1">
-          Overview of your birthday scrapbook
+          Scrapbook dashboard - manage invites and view guest pages
         </p>
       </div>
 
@@ -131,11 +131,11 @@ export default async function AdminDashboard() {
             </div>
             <div className="flex items-start gap-3">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#D4A853]/20 text-xs font-bold text-[#8B7028]">3</span>
-              <p className="text-muted-foreground">Guests enter their name and upload memories</p>
+              <p className="text-muted-foreground">Guests upload their memories for Lily</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#D4A853]/20 text-xs font-bold text-[#8B7028]">4</span>
-              <p className="text-muted-foreground">View all pages from the dashboard</p>
+              <p className="text-muted-foreground">Present the scrapbook to Lily on her birthday!</p>
             </div>
           </CardContent>
         </Card>

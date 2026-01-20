@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Collaborative digital scrapbook web app for birthday parties. Guests receive unique invite links to create personalized scrapbook pages with photos, videos, and memories.
+**This is a birthday scrapbook web app specifically for Lily's 32nd Birthday.**
+
+Guests receive unique invite links to create personalized scrapbook pages with photos, videos, and memories as a collaborative gift for Lily. All user-facing copy and messaging should reference "Lily's 32nd Birthday" to make the occasion clear and personal.
 
 ## Tech Stack
 
@@ -104,12 +106,28 @@ ADMIN_PASSWORD=         # Admin dashboard password
 NEXT_PUBLIC_APP_URL=    # Base URL for invite links
 ```
 
+## Implemented Features
+
+- Canvas-based page editor (Konva.js with react-konva)
+- Layout templates (grid, collage, hero, freeform)
+- Decorations (stickers, text, backgrounds)
+- EXIF extraction (date taken, GPS coordinates via exifr)
+- Google Maps integration (reverse geocoding, map view of photos)
+- Google Places API for location autocomplete
+
 ## Future Features (Not Yet Implemented)
 
-- Canvas-based page editor (Fabric.js or Konva.js)
-- Layout templates (grid, collage, hero, freeform)
-- Decorations (stickers, frames, stamps)
-- EXIF date extraction
-- Google Places API for location autocomplete
-- Auto-generated views (timeline, map, story feed)
+- Photo frames/borders
 - PDF export
+- Timeline view
+- Story feed view
+
+## Theming & Messaging
+
+All user-facing pages should clearly indicate this is for **Lily's 32nd Birthday**:
+- Home page: Welcome messaging for Lily's celebration
+- Invite page: "You're invited to Lily's 32nd Birthday"
+- Page builder: Context that memories are for Lily
+- Admin dashboard: Event-specific branding
+
+The visual design uses a warm, playful scrapbook aesthetic with coral, cream, and gold tones.

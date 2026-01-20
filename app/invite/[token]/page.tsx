@@ -104,7 +104,7 @@ export default function InvitePage() {
           <CardContent className="space-y-4">
             <p className="text-muted-foreground text-lg">
               Hi <span className="font-semibold text-foreground">{tokenStatus.name}</span>! Ready
-              to continue working on your scrapbook page?
+              to continue working on your page for Lily?
             </p>
             <Button
               onClick={() => handleContinue(tokenStatus.pageId)}
@@ -127,7 +127,7 @@ export default function InvitePage() {
             You&apos;re Invited!
           </h1>
           <p className="text-lg text-muted-foreground">
-            Create a special memory page for the birthday celebration
+            Create a memory page for Lily&apos;s 32nd Birthday
           </p>
         </div>
         <GuestNameForm token={token} onSuccess={handleSuccess} />
