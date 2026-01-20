@@ -75,28 +75,28 @@ export function DecorationPanel({
 
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-2xl">
-          <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mt-4 mb-2" />
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-[#FDF8F3] rounded-t-3xl">
+          <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-[#D4C8BC] mt-4 mb-2" />
 
           <div className="p-4 max-h-[70vh] overflow-y-auto">
             <Drawer.Title className="sr-only">Add Content</Drawer.Title>
 
             {/* Tab buttons */}
-            <div className="flex gap-2 mb-4 border-b pb-4 overflow-x-auto">
+            <div className="flex gap-2 mb-4 border-b border-[#E8DFD6] pb-4 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted hover:bg-muted/80"
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-white border border-[#E8DFD6] hover:border-primary/50"
                   }`}
                 >
                   <span>{tab.icon}</span>
                   <span>{tab.label}</span>
                   {tab.id === "photos" && availablePhotoCount > 0 && activeTab !== "photos" && (
-                    <span className="bg-primary/20 text-primary text-xs px-1.5 rounded-full">
+                    <span className="bg-[#FCEAE6] text-primary text-xs px-1.5 rounded-full">
                       {availablePhotoCount}
                     </span>
                   )}
@@ -120,6 +120,7 @@ export function DecorationPanel({
 
               {activeTab === "text" && (
                 <div className="text-center py-8">
+                  <div className="text-5xl mb-4">✏️</div>
                   <p className="text-muted-foreground mb-4">
                     Add a text box to write messages or captions
                   </p>

@@ -57,8 +57,8 @@ export default function PagesPage() {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Guest Pages</h1>
-        <p className="text-muted-foreground">
+        <h1 className="page-title">Guest Pages</h1>
+        <p className="text-muted-foreground mt-1">
           View all guest scrapbook pages and their memories
         </p>
       </div>
@@ -66,6 +66,7 @@ export default function PagesPage() {
       {pages.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
+            <div className="text-5xl mb-4">📖</div>
             <p className="text-muted-foreground">
               No guest pages yet. Share invite links to get started!
             </p>
@@ -73,16 +74,21 @@ export default function PagesPage() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {pages.map((page) => (
-            <Card key={page.id} className="overflow-hidden">
-              {/* Preview thumbnails */}
-              <div className="aspect-video bg-muted relative">
+          {pages.map((page, pageIndex) => (
+            <Card
+              key={page.id}
+              className="overflow-hidden card-interactive"
+              style={{ transform: `rotate(${pageIndex % 2 === 0 ? -1 : 1}deg)` }}
+            >
+              {/* Preview thumbnails with photo-like styling */}
+              <div className="aspect-video bg-[#F5EDE4] relative">
                 {page.media.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-0.5 h-full">
+                  <div className="grid grid-cols-2 gap-1 h-full p-2">
                     {page.media.slice(0, 4).map((media, index) => (
                       <div
                         key={media.id}
-                        className="relative overflow-hidden"
+                        className="relative overflow-hidden rounded-md photo-shadow"
+                        style={{ transform: `rotate(${(index - 1.5) * 2}deg)` }}
                       >
                         {media.type === "photo" ? (
                           <img
@@ -99,7 +105,7 @@ export default function PagesPage() {
                         )}
                         {index === 3 && page._count.media > 4 && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white font-bold">
+                            <span className="text-white font-bold font-display text-xl">
                               +{page._count.media - 4}
                             </span>
                           </div>
@@ -108,19 +114,20 @@ export default function PagesPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-4xl">
-                    📷
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <span className="text-4xl mb-2">📷</span>
+                    <span className="text-sm">No photos yet</span>
                   </div>
                 )}
               </div>
 
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{page.guest.name}</CardTitle>
+                <CardTitle className="text-xl font-display text-primary">{page.guest.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    {page._count.media} {page._count.media === 1 ? "item" : "items"}
+                    {page._count.media} {page._count.media === 1 ? "memory" : "memories"}
                   </p>
                   <Link href={`/page/${page.id}`} target="_blank">
                     <Button variant="outline" size="sm">

@@ -77,8 +77,9 @@ export default function InvitePage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
-            <CardTitle className="text-2xl text-destructive">
-              Invalid Invite Link
+            <div className="text-5xl mb-4">😢</div>
+            <CardTitle className="page-title text-destructive">
+              Invalid Invite
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -97,11 +98,12 @@ export default function InvitePage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
-            <CardTitle className="text-2xl">Welcome Back!</CardTitle>
+            <div className="text-5xl mb-2">👋</div>
+            <CardTitle className="page-title">Welcome Back!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Hi <span className="font-medium">{tokenStatus.name}</span>! Ready
+            <p className="text-muted-foreground text-lg">
+              Hi <span className="font-semibold text-foreground">{tokenStatus.name}</span>! Ready
               to continue working on your scrapbook page?
             </p>
             <Button
@@ -119,8 +121,9 @@ export default function InvitePage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-primary">
+        <div className="text-center space-y-3">
+          <div className="text-6xl mb-4">🎉</div>
+          <h1 className="page-title">
             You&apos;re Invited!
           </h1>
           <p className="text-lg text-muted-foreground">

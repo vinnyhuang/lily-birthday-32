@@ -222,10 +222,10 @@ export function MediaUploader({
   return (
     <div className="space-y-4">
       <Card
-        className={`border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
+        className={`border-2 border-dashed p-8 text-center transition-all duration-200 cursor-pointer bg-[#FBF5E6]/50 ${
           isDragging
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary/50"
+            ? "border-primary bg-[#FCEAE6] scale-[1.02]"
+            : "border-[#D4C8BC] hover:border-primary/50 hover:bg-[#FBF5E6]"
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -240,13 +240,13 @@ export function MediaUploader({
           multiple
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <div className="space-y-2">
-          <div className="text-4xl">📸</div>
-          <p className="text-lg font-medium">Drop photos or videos here</p>
+        <div className="space-y-3">
+          <div className="text-5xl">📷</div>
+          <p className="text-xl font-display text-primary">Drop photos or videos here</p>
           <p className="text-sm text-muted-foreground">
             or click to browse (videos max {MAX_VIDEO_DURATION}s)
           </p>
-          <Button variant="secondary" className="mt-4">
+          <Button variant="default" className="mt-4">
             Choose Files
           </Button>
         </div>
@@ -257,23 +257,25 @@ export function MediaUploader({
           {Array.from(uploads.entries()).map(([id, upload]) => (
             <div
               key={id}
-              className="flex items-center gap-3 p-3 bg-muted rounded-lg"
+              className="flex items-center gap-3 p-4 bg-white border border-[#E8DFD6] rounded-xl shadow-sm"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{upload.file.name}</p>
                 {upload.status === "uploading" && (
-                  <div className="w-full h-2 bg-background rounded-full mt-1 overflow-hidden">
+                  <div className="w-full h-2 bg-[#F5EDE4] rounded-full mt-2 overflow-hidden">
                     <div
-                      className="h-full bg-primary transition-all duration-300"
+                      className="h-full bg-primary rounded-full transition-all duration-300"
                       style={{ width: `${upload.progress}%` }}
                     />
                   </div>
                 )}
                 {upload.status === "error" && (
-                  <p className="text-sm text-destructive">{upload.error}</p>
+                  <p className="text-sm text-destructive mt-1">{upload.error}</p>
                 )}
                 {upload.status === "complete" && (
-                  <p className="text-sm text-green-600">Uploaded!</p>
+                  <p className="text-sm text-[#5A7A5E] mt-1 flex items-center gap-1">
+                    <span>✓</span> Uploaded!
+                  </p>
                 )}
               </div>
             </div>

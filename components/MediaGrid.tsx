@@ -63,8 +63,8 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
 
   if (media.length === 0) {
     return (
-      <Card className="p-12 text-center">
-        <div className="text-4xl mb-4">🎉</div>
+      <Card className="p-12 text-center bg-[#FBF5E6]/50 border-dashed border-2 border-[#D4C8BC]">
+        <div className="text-5xl mb-4">📸</div>
         <p className="text-lg text-muted-foreground">
           No memories yet! Upload some photos or videos to get started.
         </p>
@@ -75,11 +75,12 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {media.map((item) => (
+        {media.map((item, index) => (
           <Card
             key={item.id}
-            className="group relative aspect-square overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+            className="photo-grid-item group relative aspect-square overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all photo-shadow hover:scale-105"
             onClick={() => openEditDialog(item)}
+            style={{ transform: `rotate(${(index % 4 - 1.5) * 1}deg)` }}
           >
             {item.type === "photo" ? (
               <img
@@ -101,7 +102,7 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute bottom-0 left-0 right-0 p-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity">
               {item.caption && (
                 <p className="text-sm line-clamp-2">{item.caption}</p>
               )}
@@ -110,7 +111,7 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
               )}
             </div>
             {item.type === "video" && (
-              <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+              <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
                 🎬 Video
               </div>
             )}

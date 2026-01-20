@@ -96,15 +96,15 @@ export default function TokensPage() {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Invite Tokens</h1>
-        <p className="text-muted-foreground">
+        <h1 className="page-title">Invite Tokens</h1>
+        <p className="text-muted-foreground mt-1">
           Generate and manage invite links for guests
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Generate New Tokens</CardTitle>
+          <CardTitle className="section-header">Generate New Tokens</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
@@ -120,7 +120,7 @@ export default function TokensPage() {
               />
             </div>
             <Button onClick={generateTokens} disabled={isGenerating}>
-              {isGenerating ? "Generating..." : "Generate"}
+              {isGenerating ? "Generating..." : "Generate Tokens"}
             </Button>
           </div>
         </CardContent>
@@ -128,7 +128,7 @@ export default function TokensPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Tokens ({tokens.length})</CardTitle>
+          <CardTitle className="section-header">All Tokens ({tokens.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {tokens.length === 0 ? (
@@ -136,36 +136,37 @@ export default function TokensPage() {
               No tokens generated yet. Create some above!
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {tokens.map((token) => (
                 <div
                   key={token.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border ${
-                    token.used ? "bg-muted/50" : "bg-card"
+                  className={`ticket-stub flex items-center justify-between p-4 mx-2 ${
+                    token.used ? "bg-[#F5EDE4]" : "bg-white"
                   }`}
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                  <div className="space-y-1 pl-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">🎟️</span>
+                      <code className="token-display">
                         {token.token}
                       </code>
                       {token.used ? (
-                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded">
+                        <span className="badge-neutral text-xs px-3 py-1 rounded-full font-medium">
                           Used
                         </span>
                       ) : (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                        <span className="badge-success text-xs px-3 py-1 rounded-full font-medium">
                           Available
                         </span>
                       )}
                     </div>
                     {token.guest && (
-                      <p className="text-sm text-muted-foreground">
-                        Claimed by: <span className="font-medium">{token.guest.name}</span>
+                      <p className="text-sm text-muted-foreground pl-9">
+                        Claimed by: <span className="font-medium text-foreground">{token.guest.name}</span>
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pr-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -175,8 +176,9 @@ export default function TokensPage() {
                     </Button>
                     {!token.used && (
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => deleteToken(token.id)}
                       >
                         Delete

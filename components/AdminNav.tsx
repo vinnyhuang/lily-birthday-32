@@ -20,16 +20,17 @@ export function AdminNav() {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-50">
+    <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-sm border-b border-[#E8DFD6] z-50 shadow-sm">
       <div className="max-w-6xl mx-auto h-full px-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="font-bold text-lg text-primary">Admin</span>
+          <span className="font-display text-2xl text-primary">🎂 Admin</span>
           <div className="flex gap-1">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <Button
                   variant={pathname === item.href ? "secondary" : "ghost"}
                   size="sm"
+                  className={pathname === item.href ? "bg-[#FCEAE6] text-primary" : ""}
                 >
                   {item.label}
                 </Button>

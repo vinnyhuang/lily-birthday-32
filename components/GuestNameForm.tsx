@@ -53,17 +53,17 @@ export function GuestNameForm({ token, onSuccess }: GuestNameFormProps) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto shadow-lg bg-white">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome!</CardTitle>
+        <CardTitle className="text-3xl font-display text-primary">Welcome!</CardTitle>
         <CardDescription className="text-base">
           Enter your name to start creating your scrapbook page
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="name">Your Name</Label>
+            <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
             <Input
               id="name"
               type="text"
@@ -73,12 +73,12 @@ export function GuestNameForm({ token, onSuccess }: GuestNameFormProps) {
               disabled={isLoading}
               required
               maxLength={100}
-              className="text-lg"
+              className="text-lg h-12"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
+            <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg">{error}</p>
           )}
 
           <Button
@@ -86,7 +86,7 @@ export function GuestNameForm({ token, onSuccess }: GuestNameFormProps) {
             className="w-full text-lg py-6"
             disabled={isLoading || !name.trim()}
           >
-            {isLoading ? "Getting started..." : "Start Creating"}
+            {isLoading ? "Getting started..." : "Start Creating ✨"}
           </Button>
         </form>
       </CardContent>

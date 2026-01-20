@@ -164,10 +164,10 @@ export default function PageBuilder() {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary">
+          <h1 className="page-title">
             {pageData.guest.name}&apos;s Memories
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-lg">
             Upload photos, add details, and design your scrapbook page
           </p>
         </div>

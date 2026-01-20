@@ -46,17 +46,18 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-white">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
-          <CardDescription>
+          <div className="text-5xl mb-2">🎂</div>
+          <CardTitle className="page-title">Admin Login</CardTitle>
+          <CardDescription className="text-base mt-2">
             Enter the admin password to access the dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -65,16 +66,17 @@ export default function AdminLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
+                className="h-12"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
+              <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-lg">{error}</p>
             )}
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-12 text-base"
               disabled={isLoading || !password}
             >
               {isLoading ? "Logging in..." : "Login"}
