@@ -9,11 +9,12 @@ import { CanvasStickerElement, SnapResult } from "@/lib/canvas/types";
 interface CanvasStickerProps {
   element: CanvasStickerElement;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (updates: Partial<CanvasStickerElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
+  onTransform?: (scaleX: number, scaleY: number) => void;
 }
 
 export function CanvasSticker({
@@ -24,6 +25,7 @@ export function CanvasSticker({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onTransform,
 }: CanvasStickerProps) {
   const [image] = useImage(element.src, "anonymous");
   const imageRef = useRef<Konva.Image>(null);
@@ -34,7 +36,7 @@ export function CanvasSticker({
       transformerRef.current.nodes([imageRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, element.width, element.height, element.rotation]);
 
   const handleDragStart = () => {
     onDragStart?.();
@@ -89,8 +91,8 @@ export function CanvasSticker({
         rotation={element.rotation}
         opacity={element.opacity}
         draggable
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={(e) => onSelect(e)}
+        onTap={(e) => onSelect(e)}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -105,12 +107,27 @@ export function CanvasSticker({
             "top-right",
             "bottom-left",
             "bottom-right",
+            "middle-left",
+            "middle-right",
+            "top-center",
+            "bottom-center",
           ]}
           boundBoxFunc={(oldBox, newBox) => {
             if (newBox.width < 30 || newBox.height < 30) {
               return oldBox;
             }
             return newBox;
+          }}
+          onTransform={() => {
+            const node = imageRef.current;
+            if (node && onTransform) {
+              onTransform(node.scaleX(), node.scaleY());
+            }
+          }}
+          onTransformEnd={() => {
+            if (onTransform) {
+              onTransform(1, 1);
+            }
           }}
           anchorSize={10}
           anchorCornerRadius={5}

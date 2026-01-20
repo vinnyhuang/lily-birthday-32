@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { StickerPicker } from "./StickerPicker";
@@ -15,6 +14,8 @@ import { Shape } from "./shapes";
 import { PhotoCorner } from "./photoCorners";
 import { CanvasBackground, MediaItem } from "@/lib/canvas/types";
 
+export type TabType = "photos" | "stickers" | "washi" | "decor" | "text" | "background";
+
 interface DecorationPanelProps {
   onAddSticker: (sticker: Sticker, src: string) => void;
   onChangeBackground: (background: CanvasBackground) => void;
@@ -23,9 +24,11 @@ interface DecorationPanelProps {
   currentBackground: CanvasBackground;
   media: MediaItem[];
   onCanvasMediaIds: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
 }
-
-type TabType = "photos" | "stickers" | "washi" | "decor" | "text" | "background";
 
 export function DecorationPanel({
   onAddSticker,
@@ -35,9 +38,11 @@ export function DecorationPanel({
   currentBackground,
   media,
   onCanvasMediaIds,
+  open,
+  onOpenChange,
+  activeTab,
+  onTabChange,
 }: DecorationPanelProps) {
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("photos");
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: "photos", label: "Photos", icon: "📷" },
@@ -50,7 +55,7 @@ export function DecorationPanel({
 
   const handleAddSticker = (sticker: Sticker, src: string) => {
     onAddSticker(sticker, src);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleAddWashiTape = (tape: WashiTape, dataUrl: string) => {
@@ -62,7 +67,7 @@ export function DecorationPanel({
       category: "washi",
     };
     onAddSticker(stickerLike, dataUrl);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleAddDoodle = (doodle: Doodle, dataUrl: string) => {
@@ -73,7 +78,7 @@ export function DecorationPanel({
       category: "doodle",
     };
     onAddSticker(stickerLike, dataUrl);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleAddShape = (shape: Shape, dataUrl: string) => {
@@ -84,7 +89,7 @@ export function DecorationPanel({
       category: "shape",
     };
     onAddSticker(stickerLike, dataUrl);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleAddCorner = (corner: PhotoCorner, dataUrl: string) => {
@@ -95,17 +100,17 @@ export function DecorationPanel({
       category: "photo-corner",
     };
     onAddSticker(stickerLike, dataUrl);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleAddText = () => {
     onAddText();
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleAddPhotos = (mediaItems: MediaItem[]) => {
     onAddPhotos(mediaItems);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   // Count photos not on canvas
@@ -114,18 +119,7 @@ export function DecorationPanel({
   ).length;
 
   return (
-    <Drawer.Root open={open} onOpenChange={setOpen}>
-      <Drawer.Trigger asChild>
-        <Button variant="outline" size="sm">
-          Add Content
-          {availablePhotoCount > 0 && (
-            <span className="ml-1.5 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
-              {availablePhotoCount}
-            </span>
-          )}
-        </Button>
-      </Drawer.Trigger>
-
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40" />
         <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-[#FDF8F3] rounded-t-3xl">
@@ -139,7 +133,7 @@ export function DecorationPanel({
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => onTabChange(tab.id)}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
                       ? "bg-primary text-white shadow-sm"

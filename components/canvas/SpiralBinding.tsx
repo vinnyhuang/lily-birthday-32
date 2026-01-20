@@ -10,9 +10,8 @@ interface SpiralBindingProps {
 export function SpiralBinding({ canvasWidth, canvasHeight }: SpiralBindingProps) {
   const centerX = canvasWidth / 2;
   const ringSpacing = 28;
-  const topPadding = 20;
-  const ringCount = Math.floor((canvasHeight - topPadding * 2) / ringSpacing);
-  const startY = topPadding;
+  const ringCount = Math.floor(canvasHeight / ringSpacing);
+  const startY = ringSpacing / 2; // Start at half spacing so rings are centered vertically
 
   // Ring dimensions
   const ringRadiusX = 10;

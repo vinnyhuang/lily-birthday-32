@@ -8,11 +8,12 @@ import { CanvasTextElement, SnapResult } from "@/lib/canvas/types";
 interface CanvasTextProps {
   element: CanvasTextElement;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (updates: Partial<CanvasTextElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
+  onTransform?: (scaleX: number, scaleY: number) => void;
 }
 
 export function CanvasText({
@@ -23,6 +24,7 @@ export function CanvasText({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onTransform,
 }: CanvasTextProps) {
   const textRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
@@ -33,7 +35,7 @@ export function CanvasText({
       transformerRef.current.nodes([textRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, isEditing]);
+  }, [isSelected, isEditing, element.width, element.fontSize, element.rotation]);
 
   const handleDragStart = () => {
     onDragStart?.();
@@ -140,8 +142,8 @@ export function CanvasText({
         rotation={element.rotation}
         width={element.width}
         draggable
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={(e) => onSelect(e)}
+        onTap={(e) => onSelect(e)}
         onDblClick={handleDoubleClick}
         onDblTap={handleDoubleClick}
         onDragStart={handleDragStart}
@@ -154,12 +156,28 @@ export function CanvasText({
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}
-          enabledAnchors={["middle-left", "middle-right"]}
+          enabledAnchors={[
+            "middle-left",
+            "middle-right",
+            "top-center",
+            "bottom-center",
+          ]}
           boundBoxFunc={(oldBox, newBox) => {
             if (newBox.width < 50) {
               return oldBox;
             }
             return newBox;
+          }}
+          onTransform={() => {
+            const node = textRef.current;
+            if (node && onTransform) {
+              onTransform(node.scaleX(), node.scaleY());
+            }
+          }}
+          onTransformEnd={() => {
+            if (onTransform) {
+              onTransform(1, 1);
+            }
           }}
           anchorSize={10}
           anchorCornerRadius={5}

@@ -10,11 +10,12 @@ import { generateTapeDataUrl } from "@/lib/canvas/frames";
 interface CanvasImageProps {
   element: CanvasImageElement;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (updates: Partial<CanvasImageElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
+  onTransform?: (scaleX: number, scaleY: number) => void;
 }
 
 export function CanvasImage({
@@ -25,6 +26,7 @@ export function CanvasImage({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onTransform,
 }: CanvasImageProps) {
   const [image] = useImage(element.src, "anonymous");
   const groupRef = useRef<Konva.Group>(null);
@@ -47,7 +49,7 @@ export function CanvasImage({
       transformerRef.current.nodes([groupRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, element.width, element.height, element.rotation]);
 
   const handleDragStart = () => {
     onDragStart?.();
@@ -187,8 +189,8 @@ export function CanvasImage({
         y={element.y}
         rotation={element.rotation}
         draggable
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={(e) => onSelect(e)}
+        onTap={(e) => onSelect(e)}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -267,6 +269,18 @@ export function CanvasImage({
               return oldBox;
             }
             return newBox;
+          }}
+          onTransform={() => {
+            const node = groupRef.current;
+            if (node && onTransform) {
+              onTransform(node.scaleX(), node.scaleY());
+            }
+          }}
+          onTransformEnd={() => {
+            // Clear the transform preview
+            if (onTransform) {
+              onTransform(1, 1);
+            }
           }}
           anchorSize={12}
           anchorCornerRadius={6}

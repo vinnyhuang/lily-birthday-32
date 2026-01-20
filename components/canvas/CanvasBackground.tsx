@@ -39,6 +39,7 @@ export function CanvasBackground({
         width={width}
         height={height}
         fill={background.value}
+        listening={false}
       />
     );
   }
@@ -63,6 +64,7 @@ export function CanvasBackground({
         x: 0,
         y: 0,
       }}
+      listening={false}
     />
   );
 }

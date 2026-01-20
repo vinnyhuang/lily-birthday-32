@@ -2,6 +2,11 @@
 
 import { FrameStyle } from "@/lib/canvas/types";
 import { frames, FrameDefinition } from "@/lib/canvas/frames";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FramePickerProps {
   currentFrame: FrameStyle;
@@ -10,7 +15,7 @@ interface FramePickerProps {
 
 export function FramePicker({ currentFrame, onSelect }: FramePickerProps) {
   return (
-    <div className="flex items-center gap-1 p-1 bg-white rounded-lg shadow-sm border">
+    <div className="flex items-center gap-0.5">
       {frames.map((frame) => (
         <FrameButton
           key={frame.id}
@@ -31,17 +36,23 @@ interface FrameButtonProps {
 
 function FrameButton({ frame, isSelected, onSelect }: FrameButtonProps) {
   return (
-    <button
-      onClick={onSelect}
-      className={`p-1.5 rounded transition-colors ${
-        isSelected
-          ? "bg-primary/10 text-primary"
-          : "hover:bg-accent text-muted-foreground"
-      }`}
-      title={frame.name}
-    >
-      <FrameIcon frameId={frame.id} />
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onSelect}
+          className={`p-1.5 rounded transition-colors ${
+            isSelected
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-accent text-muted-foreground"
+          }`}
+        >
+          <FrameIcon frameId={frame.id} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p>{frame.name}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

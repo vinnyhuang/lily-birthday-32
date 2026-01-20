@@ -7,6 +7,8 @@ import {
   CanvasImageElement,
   MediaItem,
   createDefaultCanvasData,
+  DEFAULT_CANVAS_WIDTH,
+  DEFAULT_CANVAS_HEIGHT,
 } from "@/lib/canvas/types";
 
 interface UseCanvasStateOptions {
@@ -21,12 +23,21 @@ interface UseCanvasStateOptions {
 // Users can add photos via "Add Content" which properly loads image dimensions
 // to maintain aspect ratios. This avoids the distortion issue with square placeholders.
 
-// Helper to refresh image URLs and remove deleted media from canvas
+// Helper to refresh image URLs, remove deleted media, and migrate canvas dimensions
 function refreshCanvasUrls(
   canvasData: CanvasData,
   media: MediaItem[]
 ): CanvasData {
   const urlMap = new Map(media.map((m) => [m.id, m.url]));
+
+  // Check if we need to migrate dimensions (e.g., from old 4:5 to new 16:9)
+  const needsDimensionMigration =
+    canvasData.width !== DEFAULT_CANVAS_WIDTH ||
+    canvasData.height !== DEFAULT_CANVAS_HEIGHT;
+
+  // Calculate scale factors for migrating element positions
+  const scaleX = needsDimensionMigration ? DEFAULT_CANVAS_WIDTH / canvasData.width : 1;
+  const scaleY = needsDimensionMigration ? DEFAULT_CANVAS_HEIGHT / canvasData.height : 1;
 
   const refreshedElements = canvasData.elements
     .map((el) => {
@@ -36,7 +47,28 @@ function refreshCanvasUrls(
         if (!freshUrl) {
           return null;
         }
+        // Migrate position if dimensions changed
+        if (needsDimensionMigration) {
+          return {
+            ...imageEl,
+            src: freshUrl,
+            x: imageEl.x * scaleX,
+            y: imageEl.y * scaleY,
+            width: imageEl.width * scaleX,
+            height: imageEl.height * scaleY,
+          };
+        }
         return { ...imageEl, src: freshUrl };
+      }
+      // Migrate other elements too
+      if (needsDimensionMigration) {
+        return {
+          ...el,
+          x: el.x * scaleX,
+          y: el.y * scaleY,
+          width: el.width * scaleX,
+          height: el.height * scaleY,
+        };
       }
       return el;
     })
@@ -44,6 +76,8 @@ function refreshCanvasUrls(
 
   return {
     ...canvasData,
+    width: DEFAULT_CANVAS_WIDTH,
+    height: DEFAULT_CANVAS_HEIGHT,
     elements: refreshedElements,
   };
 }
@@ -71,35 +105,67 @@ export function useCanvasState({
   }, [initialData, media]);
 
   const [canvasData, setCanvasData] = useState<CanvasData>(getInitialCanvas);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // History for undo/redo
   const [history, setHistory] = useState<CanvasData[]>(() => [cloneCanvasData(getInitialCanvas())]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const historyIndexRef = useRef(0); // Ref to avoid stale closure in pushToHistory
   const isUndoRedoRef = useRef(false);
 
   // Auto-save refs
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>(JSON.stringify(getInitialCanvas()));
 
+  // Ref to track pending history push and prevent duplicates
+  const pendingHistoryRef = useRef<{ data: CanvasData; id: number } | null>(null);
+  const historyPushIdRef = useRef(0);
+
   // Push current state to history (called after user actions)
   const pushToHistory = useCallback((newData: CanvasData) => {
+    // Read the ref value BEFORE any state updates
+    const currentIndex = historyIndexRef.current;
+
+    console.log('[History] pushToHistory called, currentIndex from ref:', currentIndex);
+
+    // Calculate the new history array
     setHistory((prev) => {
       // Remove any future states if we're not at the end
-      const newHistory = prev.slice(0, historyIndex + 1);
+      const newHistory = prev.slice(0, currentIndex + 1);
       // Add new state
       newHistory.push(cloneCanvasData(newData));
+
+      console.log('[History] pushToHistory inside setHistory:', {
+        prevHistory: prev.map((_, i) => i), // Just show indices for readability
+        prevLength: prev.length,
+        currentIndex,
+        sliceEnd: currentIndex + 1,
+        newHistoryLength: newHistory.length,
+        resultingIndices: newHistory.map((_, i) => i),
+      });
+
       // Limit history size
       if (newHistory.length > maxHistorySize) {
         newHistory.shift();
-        return newHistory;
       }
+
+      // Update ref immediately (synchronous)
+      const newIndex = newHistory.length - 1;
+      historyIndexRef.current = newIndex;
+
+      console.log('[History] pushToHistory updated ref to:', newIndex);
+
       return newHistory;
     });
-    setHistoryIndex((prev) => Math.min(prev + 1, maxHistorySize - 1));
-  }, [historyIndex, maxHistorySize]);
+
+    // Update the index state separately (will be batched by React)
+    setHistoryIndex((prev) => {
+      console.log('[History] setHistoryIndex updating from', prev, 'to', historyIndexRef.current);
+      return historyIndexRef.current;
+    });
+  }, [maxHistorySize]);
 
   // Auto-save with debounce
   useEffect(() => {
@@ -137,43 +203,74 @@ export function useCanvasState({
   // Helper to update canvas and push to history
   const updateCanvasWithHistory = useCallback(
     (updater: (prev: CanvasData) => CanvasData) => {
+      // Generate unique ID for this history push to prevent duplicates from Strict Mode
+      const pushId = ++historyPushIdRef.current;
+
       setCanvasData((prev) => {
         const newData = updater(prev);
-        // Push to history after state update
-        setTimeout(() => pushToHistory(newData), 0);
+        // Store the pending history push with its ID
+        pendingHistoryRef.current = { data: newData, id: pushId };
         return newData;
       });
+
+      // Push to history after state update
+      setTimeout(() => {
+        // Only push if this is still the most recent pending push
+        const pending = pendingHistoryRef.current;
+        if (pending && pending.id === pushId) {
+          console.log('[History] updateCanvasWithHistory pushing, id:', pushId);
+          pushToHistory(pending.data);
+          pendingHistoryRef.current = null;
+        } else {
+          console.log('[History] updateCanvasWithHistory skipped duplicate, id:', pushId, 'current:', pending?.id);
+        }
+      }, 0);
     },
     [pushToHistory]
   );
 
   // Undo
   const undo = useCallback(() => {
-    if (historyIndex > 0) {
+    console.log('[History] undo called:', {
+      currentIndex: historyIndexRef.current,
+      historyLength: history.length,
+      canUndo: historyIndexRef.current > 0,
+    });
+    if (historyIndexRef.current > 0) {
       isUndoRedoRef.current = true;
-      const newIndex = historyIndex - 1;
+      const newIndex = historyIndexRef.current - 1;
+      historyIndexRef.current = newIndex;
+      console.log('[History] undo: ref updated to', newIndex);
       setHistoryIndex(newIndex);
       setCanvasData(cloneCanvasData(history[newIndex]));
-      setSelectedId(null);
+      setSelectedIds([]);
+      console.log('[History] undo applied, new index:', newIndex, 'ref is now:', historyIndexRef.current);
       setTimeout(() => {
         isUndoRedoRef.current = false;
       }, 0);
     }
-  }, [history, historyIndex]);
+  }, [history]);
 
   // Redo
   const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
+    console.log('[History] redo called:', {
+      currentIndex: historyIndexRef.current,
+      historyLength: history.length,
+      canRedo: historyIndexRef.current < history.length - 1,
+    });
+    if (historyIndexRef.current < history.length - 1) {
       isUndoRedoRef.current = true;
-      const newIndex = historyIndex + 1;
+      const newIndex = historyIndexRef.current + 1;
+      historyIndexRef.current = newIndex;
       setHistoryIndex(newIndex);
       setCanvasData(cloneCanvasData(history[newIndex]));
-      setSelectedId(null);
+      setSelectedIds([]);
+      console.log('[History] redo applied, new index:', newIndex);
       setTimeout(() => {
         isUndoRedoRef.current = false;
       }, 0);
     }
-  }, [history, historyIndex]);
+  }, [history]);
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -191,6 +288,34 @@ export function useCanvasState({
     [updateCanvasWithHistory]
   );
 
+  // Update multiple elements at once (for multi-select)
+  const updateElements = useCallback(
+    (ids: string[], updates: Partial<CanvasElement>) => {
+      updateCanvasWithHistory((prev) => ({
+        ...prev,
+        elements: prev.elements.map((el) =>
+          ids.includes(el.id) ? ({ ...el, ...updates } as CanvasElement) : el
+        ),
+      }));
+    },
+    [updateCanvasWithHistory]
+  );
+
+  // Translate multiple elements by delta (for multi-select drag)
+  const translateElements = useCallback(
+    (ids: string[], deltaX: number, deltaY: number) => {
+      updateCanvasWithHistory((prev) => ({
+        ...prev,
+        elements: prev.elements.map((el) =>
+          ids.includes(el.id)
+            ? ({ ...el, x: el.x + deltaX, y: el.y + deltaY } as CanvasElement)
+            : el
+        ),
+      }));
+    },
+    [updateCanvasWithHistory]
+  );
+
   // Add a new element
   const addElement = useCallback(
     (element: CanvasElement) => {
@@ -198,19 +323,20 @@ export function useCanvasState({
         ...prev,
         elements: [...prev.elements, element],
       }));
-      setSelectedId(element.id);
+      setSelectedIds([element.id]);
     },
     [updateCanvasWithHistory]
   );
 
-  // Remove an element
+  // Remove element(s) - supports single id or array of ids
   const removeElement = useCallback(
-    (id: string) => {
+    (ids: string | string[]) => {
+      const idsToRemove = Array.isArray(ids) ? ids : [ids];
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        elements: prev.elements.filter((el) => el.id !== id),
+        elements: prev.elements.filter((el) => !idsToRemove.includes(el.id)),
       }));
-      setSelectedId(null);
+      setSelectedIds([]);
     },
     [updateCanvasWithHistory]
   );
@@ -291,19 +417,47 @@ export function useCanvasState({
     [updateCanvasWithHistory]
   );
 
-  // Get selected element
-  const selectedElement = canvasData.elements.find((el) => el.id === selectedId) || null;
+  // Get selected elements
+  const selectedElements = canvasData.elements.filter((el) => selectedIds.includes(el.id));
+
+  // Toggle selection (for ctrl/cmd/shift click)
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  }, []);
+
+  // Add to selection
+  const addToSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+
+  // Clear selection
+  const clearSelection = useCallback(() => {
+    setSelectedIds([]);
+  }, []);
+
+  // Select single element (replaces current selection)
+  const selectElement = useCallback((id: string | null) => {
+    setSelectedIds(id ? [id] : []);
+  }, []);
 
   return {
     canvasData,
-    selectedId,
-    selectedElement,
+    selectedIds,
+    selectedElements,
     isSaving,
     lastSaved,
     canUndo,
     canRedo,
-    setSelectedId,
+    selectElement,
+    toggleSelection,
+    addToSelection,
+    clearSelection,
+    setSelectedIds,
     updateElement,
+    updateElements,
+    translateElements,
     addElement,
     removeElement,
     setBackground,

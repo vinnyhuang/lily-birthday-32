@@ -214,10 +214,7 @@ export default function PageBuilder() {
             className="mt-6 data-[state=inactive]:absolute data-[state=inactive]:left-0 data-[state=inactive]:right-0 data-[state=inactive]:opacity-0 data-[state=inactive]:pointer-events-none data-[state=inactive]:-z-10"
             forceMount
           >
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Drag photos to arrange them, add stickers and text, or choose a layout template.
-              </p>
+            <div>
               {/* Key forces re-init when media changes (add/delete) */}
               <CanvasEditor
                 key={pageData.media.map((m) => m.id).join(",")}
