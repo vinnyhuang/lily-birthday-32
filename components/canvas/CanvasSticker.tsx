@@ -4,13 +4,16 @@ import { useRef, useEffect } from "react";
 import { Image, Transformer } from "react-konva";
 import useImage from "use-image";
 import Konva from "konva";
-import { CanvasStickerElement } from "@/lib/canvas/types";
+import { CanvasStickerElement, SnapResult } from "@/lib/canvas/types";
 
 interface CanvasStickerProps {
   element: CanvasStickerElement;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (updates: Partial<CanvasStickerElement>) => void;
+  onDragStart?: () => void;
+  onDragMove?: (newX: number, newY: number) => SnapResult;
+  onDragEnd?: () => void;
 }
 
 export function CanvasSticker({
@@ -18,6 +21,9 @@ export function CanvasSticker({
   isSelected,
   onSelect,
   onChange,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
 }: CanvasStickerProps) {
   const [image] = useImage(element.src, "anonymous");
   const imageRef = useRef<Konva.Image>(null);
@@ -30,11 +36,25 @@ export function CanvasSticker({
     }
   }, [isSelected]);
 
+  const handleDragStart = () => {
+    onDragStart?.();
+  };
+
+  const handleDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (onDragMove) {
+      const node = e.target;
+      const result = onDragMove(node.x(), node.y());
+      node.x(result.x);
+      node.y(result.y);
+    }
+  };
+
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     onChange({
       x: e.target.x(),
       y: e.target.y(),
     });
+    onDragEnd?.();
   };
 
   const handleTransformEnd = () => {
@@ -67,9 +87,12 @@ export function CanvasSticker({
         width={element.width}
         height={element.height}
         rotation={element.rotation}
+        opacity={element.opacity}
         draggable
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       />

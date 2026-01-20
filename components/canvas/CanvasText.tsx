@@ -3,13 +3,16 @@
 import { useRef, useEffect, useState } from "react";
 import { Text, Transformer } from "react-konva";
 import Konva from "konva";
-import { CanvasTextElement } from "@/lib/canvas/types";
+import { CanvasTextElement, SnapResult } from "@/lib/canvas/types";
 
 interface CanvasTextProps {
   element: CanvasTextElement;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (updates: Partial<CanvasTextElement>) => void;
+  onDragStart?: () => void;
+  onDragMove?: (newX: number, newY: number) => SnapResult;
+  onDragEnd?: () => void;
 }
 
 export function CanvasText({
@@ -17,6 +20,9 @@ export function CanvasText({
   isSelected,
   onSelect,
   onChange,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
 }: CanvasTextProps) {
   const textRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
@@ -29,11 +35,25 @@ export function CanvasText({
     }
   }, [isSelected, isEditing]);
 
+  const handleDragStart = () => {
+    onDragStart?.();
+  };
+
+  const handleDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (onDragMove) {
+      const node = e.target;
+      const result = onDragMove(node.x(), node.y());
+      node.x(result.x);
+      node.y(result.y);
+    }
+  };
+
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     onChange({
       x: e.target.x(),
       y: e.target.y(),
     });
+    onDragEnd?.();
   };
 
   const handleTransformEnd = () => {
@@ -124,6 +144,8 @@ export function CanvasText({
         onTap={onSelect}
         onDblClick={handleDoubleClick}
         onDblTap={handleDoubleClick}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
         visible={!isEditing}

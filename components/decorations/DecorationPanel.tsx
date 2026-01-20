@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { StickerPicker } from "./StickerPicker";
 import { BackgroundPicker } from "./BackgroundPicker";
 import { PhotoPicker } from "./PhotoPicker";
+import { WashiTapePicker } from "./WashiTapePicker";
+import { DecorativeElementsPicker } from "./DecorativeElementsPicker";
 import { Sticker } from "./stickers";
+import { WashiTape } from "./washiTapes";
+import { Doodle } from "./doodles";
+import { Shape } from "./shapes";
+import { PhotoCorner } from "./photoCorners";
 import { CanvasBackground, MediaItem } from "@/lib/canvas/types";
 
 interface DecorationPanelProps {
@@ -19,7 +25,7 @@ interface DecorationPanelProps {
   onCanvasMediaIds: string[];
 }
 
-type TabType = "photos" | "stickers" | "text" | "background";
+type TabType = "photos" | "stickers" | "washi" | "decor" | "text" | "background";
 
 export function DecorationPanel({
   onAddSticker,
@@ -36,12 +42,59 @@ export function DecorationPanel({
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: "photos", label: "Photos", icon: "📷" },
     { id: "stickers", label: "Stickers", icon: "🎨" },
+    { id: "washi", label: "Washi", icon: "📏" },
+    { id: "decor", label: "Decor", icon: "✨" },
     { id: "text", label: "Text", icon: "Aa" },
     { id: "background", label: "Background", icon: "🖼️" },
   ];
 
   const handleAddSticker = (sticker: Sticker, src: string) => {
     onAddSticker(sticker, src);
+    setOpen(false);
+  };
+
+  const handleAddWashiTape = (tape: WashiTape, dataUrl: string) => {
+    // Convert washi tape to sticker format
+    const stickerLike: Sticker = {
+      id: tape.id,
+      emoji: tape.label,
+      label: tape.label,
+      category: "washi",
+    };
+    onAddSticker(stickerLike, dataUrl);
+    setOpen(false);
+  };
+
+  const handleAddDoodle = (doodle: Doodle, dataUrl: string) => {
+    const stickerLike: Sticker = {
+      id: doodle.id,
+      emoji: doodle.label,
+      label: doodle.label,
+      category: "doodle",
+    };
+    onAddSticker(stickerLike, dataUrl);
+    setOpen(false);
+  };
+
+  const handleAddShape = (shape: Shape, dataUrl: string) => {
+    const stickerLike: Sticker = {
+      id: shape.id,
+      emoji: shape.label,
+      label: shape.label,
+      category: "shape",
+    };
+    onAddSticker(stickerLike, dataUrl);
+    setOpen(false);
+  };
+
+  const handleAddCorner = (corner: PhotoCorner, dataUrl: string) => {
+    const stickerLike: Sticker = {
+      id: corner.id,
+      emoji: corner.label,
+      label: corner.label,
+      category: "photo-corner",
+    };
+    onAddSticker(stickerLike, dataUrl);
     setOpen(false);
   };
 
@@ -116,6 +169,18 @@ export function DecorationPanel({
 
               {activeTab === "stickers" && (
                 <StickerPicker onSelect={handleAddSticker} />
+              )}
+
+              {activeTab === "washi" && (
+                <WashiTapePicker onSelect={handleAddWashiTape} />
+              )}
+
+              {activeTab === "decor" && (
+                <DecorativeElementsPicker
+                  onSelectDoodle={handleAddDoodle}
+                  onSelectShape={handleAddShape}
+                  onSelectCorner={handleAddCorner}
+                />
               )}
 
               {activeTab === "text" && (

@@ -10,6 +10,25 @@ export interface CanvasElementBase {
   scaleY: number;
   zIndex: number;
   locked?: boolean;
+  visible?: boolean;
+}
+
+// Frame styles for photos
+export type FrameStyle = "none" | "polaroid" | "torn" | "taped" | "circle" | "rounded";
+
+// Alignment guide for snapping
+export interface AlignmentGuide {
+  type: "vertical" | "horizontal";
+  position: number; // x for vertical, y for horizontal
+  start: number;
+  end: number;
+}
+
+// Snap calculation result
+export interface SnapResult {
+  x: number;
+  y: number;
+  guides: AlignmentGuide[];
 }
 
 // Photo element on canvas
@@ -17,15 +36,21 @@ export interface CanvasImageElement extends CanvasElementBase {
   type: "image";
   mediaId: string;
   src: string;
-  frameId?: string;
+  frameStyle?: FrameStyle;
 }
+
+// Sticker category types
+export type StickerCategory = "emoji" | "stamp" | "washi" | "doodle" | "shape" | "photo-corner";
 
 // Sticker decoration element
 export interface CanvasStickerElement extends CanvasElementBase {
   type: "sticker";
   stickerId: string;
   src: string;
-  category: "emoji" | "stamp" | "washi";
+  category: StickerCategory;
+  opacity?: number; // For washi tape transparency (0.85-0.90)
+  fillColor?: string; // For shape elements
+  strokeColor?: string; // For shape elements
 }
 
 // Text element
@@ -47,8 +72,8 @@ export type CanvasElement =
 
 // Background configuration
 export interface CanvasBackground {
-  type: "color" | "pattern";
-  value: string;
+  type: "color" | "texture";
+  value: string; // hex color or texture ID
 }
 
 // Complete canvas state (stored in Page.canvasData)
@@ -132,10 +157,23 @@ export function createImageElement(
 export function createStickerElement(
   stickerId: string,
   src: string,
-  category: "emoji" | "stamp" | "washi",
+  category: StickerCategory,
   position: { x: number; y: number },
-  zIndex: number
+  zIndex: number,
+  options?: { width?: number; height?: number; opacity?: number }
 ): CanvasStickerElement {
+  // Default sizes based on category
+  const defaultSizes: Record<StickerCategory, { width: number; height: number }> = {
+    emoji: { width: 80, height: 80 },
+    stamp: { width: 80, height: 80 },
+    washi: { width: 120, height: 30 },
+    doodle: { width: 100, height: 100 },
+    shape: { width: 120, height: 80 },
+    "photo-corner": { width: 40, height: 40 },
+  };
+
+  const size = defaultSizes[category];
+
   return {
     id: `sticker-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     type: "sticker",
@@ -144,12 +182,13 @@ export function createStickerElement(
     category,
     x: position.x,
     y: position.y,
-    width: 80,
-    height: 80,
+    width: options?.width ?? size.width,
+    height: options?.height ?? size.height,
     rotation: 0,
     scaleX: 1,
     scaleY: 1,
     zIndex,
+    opacity: options?.opacity ?? (category === "washi" ? 0.88 : undefined),
   };
 }
 

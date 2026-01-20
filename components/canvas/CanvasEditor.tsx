@@ -1,18 +1,23 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Stage, Layer, Rect } from "react-konva";
+import { Stage, Layer } from "react-konva";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import { CanvasSticker } from "./CanvasSticker";
 import { CanvasText } from "./CanvasText";
+import { CanvasBackground } from "./CanvasBackground";
+import { AlignmentGuides } from "./AlignmentGuides";
+import { FramePicker } from "./FramePicker";
 import { useCanvasState } from "./useCanvasState";
+import { useAlignmentGuides } from "./useAlignmentGuides";
 import {
   CanvasData,
   MediaItem,
   CanvasImageElement,
   CanvasStickerElement,
   CanvasTextElement,
+  FrameStyle,
   createStickerElement,
   createTextElement,
   createImageElement,
@@ -56,6 +61,18 @@ export function CanvasEditor({
     initialData: initialCanvasData,
     media,
     onSave,
+  });
+
+  // Alignment guides for element snapping
+  const {
+    guides,
+    onDragStart: onGuideDragStart,
+    onDragMove: onGuideDragMove,
+    onDragEnd: onGuideDragEnd,
+  } = useAlignmentGuides({
+    elements: canvasData.elements,
+    canvasWidth: canvasData.width,
+    canvasHeight: canvasData.height,
   });
 
   // Responsive sizing with visibility detection
@@ -367,12 +384,10 @@ export function CanvasEditor({
         >
           {/* Background Layer */}
           <Layer>
-            <Rect
-              x={0}
-              y={0}
+            <CanvasBackground
+              background={canvasData.background}
               width={canvasData.width}
               height={canvasData.height}
-              fill={canvasData.background.value}
             />
           </Layer>
 
@@ -387,6 +402,9 @@ export function CanvasEditor({
                     isSelected={selectedId === element.id}
                     onSelect={() => setSelectedId(element.id)}
                     onChange={(updates) => updateElement(element.id, updates)}
+                    onDragStart={() => onGuideDragStart(element.id)}
+                    onDragMove={(newX, newY) => onGuideDragMove(element, newX, newY)}
+                    onDragEnd={onGuideDragEnd}
                   />
                 );
               }
@@ -398,6 +416,9 @@ export function CanvasEditor({
                     isSelected={selectedId === element.id}
                     onSelect={() => setSelectedId(element.id)}
                     onChange={(updates) => updateElement(element.id, updates)}
+                    onDragStart={() => onGuideDragStart(element.id)}
+                    onDragMove={(newX, newY) => onGuideDragMove(element, newX, newY)}
+                    onDragEnd={onGuideDragEnd}
                   />
                 );
               }
@@ -409,11 +430,17 @@ export function CanvasEditor({
                     isSelected={selectedId === element.id}
                     onSelect={() => setSelectedId(element.id)}
                     onChange={(updates) => updateElement(element.id, updates)}
+                    onDragStart={() => onGuideDragStart(element.id)}
+                    onDragMove={(newX, newY) => onGuideDragMove(element, newX, newY)}
+                    onDragEnd={onGuideDragEnd}
                   />
                 );
               }
               return null;
             })}
+
+            {/* Alignment Guides */}
+            <AlignmentGuides guides={guides} />
           </Layer>
         </Stage>
 
@@ -429,19 +456,35 @@ export function CanvasEditor({
       </div>
 
       {/* Selection info */}
-      {selectedId && (
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <span>Selected: Drag to move, corners to resize</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => removeElement(selectedId)}
-            className="text-destructive hover:text-destructive"
-          >
-            Delete
-          </Button>
-        </div>
-      )}
+      {selectedId && (() => {
+        const selectedElement = canvasData.elements.find((el) => el.id === selectedId);
+        const isImage = selectedElement?.type === "image";
+        const imageElement = isImage ? selectedElement as CanvasImageElement : null;
+
+        return (
+          <div className="flex flex-col items-center gap-2">
+            {/* Frame picker for images */}
+            {isImage && imageElement && (
+              <FramePicker
+                currentFrame={imageElement.frameStyle || "none"}
+                onSelect={(frame: FrameStyle) => updateElement(selectedId, { frameStyle: frame })}
+              />
+            )}
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Selected: Drag to move, corners to resize</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeElement(selectedId)}
+                className="text-destructive hover:text-destructive"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
