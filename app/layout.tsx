@@ -35,6 +35,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${caveat.variable} ${nunito.variable} ${ibmPlexMono.variable} font-body antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>
