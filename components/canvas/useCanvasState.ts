@@ -352,15 +352,18 @@ export function useCanvasState({
     [updateCanvasWithHistory]
   );
 
-  // Bring element to front
+  // Bring element(s) to front
   const bringToFront = useCallback(
-    (id: string) => {
+    (ids: string | string[]) => {
+      const idsToMove = Array.isArray(ids) ? ids : [ids];
       updateCanvasWithHistory((prev) => {
         const maxZ = Math.max(...prev.elements.map((el) => el.zIndex));
         return {
           ...prev,
-          elements: prev.elements.map((el) =>
-            el.id === id ? { ...el, zIndex: maxZ + 1 } : el
+          elements: prev.elements.map((el, idx) =>
+            idsToMove.includes(el.id)
+              ? { ...el, zIndex: maxZ + 1 + idsToMove.indexOf(el.id) }
+              : el
           ),
         };
       });
@@ -368,15 +371,18 @@ export function useCanvasState({
     [updateCanvasWithHistory]
   );
 
-  // Send element to back
+  // Send element(s) to back
   const sendToBack = useCallback(
-    (id: string) => {
+    (ids: string | string[]) => {
+      const idsToMove = Array.isArray(ids) ? ids : [ids];
       updateCanvasWithHistory((prev) => {
         const minZ = Math.min(...prev.elements.map((el) => el.zIndex));
         return {
           ...prev,
           elements: prev.elements.map((el) =>
-            el.id === id ? { ...el, zIndex: minZ - 1 } : el
+            idsToMove.includes(el.id)
+              ? { ...el, zIndex: minZ - 1 - idsToMove.indexOf(el.id) }
+              : el
           ),
         };
       });

@@ -85,6 +85,8 @@ export function CanvasEditor({
     addElement,
     removeElement,
     setBackground,
+    bringToFront,
+    sendToBack,
     applyLayout,
     undo,
     redo,
@@ -710,24 +712,72 @@ export function CanvasEditor({
             {/* Delete button */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 text-destructive hover:text-destructive"
-                  onClick={() => selectedIds.length > 0 && removeElement(selectedIds)}
-                  disabled={selectedIds.length === 0}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18"/>
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                    <line x1="10" x2="10" y1="11" y2="17"/>
-                    <line x1="14" x2="14" y1="11" y2="17"/>
-                  </svg>
-                </Button>
+                <span tabIndex={0}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-destructive hover:text-destructive"
+                    onClick={() => selectedIds.length > 0 && removeElement(selectedIds)}
+                    disabled={selectedIds.length === 0}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18"/>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                      <line x1="10" x2="10" y1="11" y2="17"/>
+                      <line x1="14" x2="14" y1="11" y2="17"/>
+                    </svg>
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="left">
                 <p>Delete</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Bring to Front button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={() => selectedIds.length > 0 && bringToFront(selectedIds)}
+                    disabled={selectedIds.length === 0}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="8" y="8" width="12" height="12" rx="2"/>
+                      <path d="M4 16V6a2 2 0 0 1 2-2h10"/>
+                    </svg>
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Bring to Front</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Send to Back button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={() => selectedIds.length > 0 && sendToBack(selectedIds)}
+                    disabled={selectedIds.length === 0}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="4" y="4" width="12" height="12" rx="2"/>
+                      <path d="M20 8v10a2 2 0 0 1-2 2H8"/>
+                    </svg>
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Send to Back</p>
               </TooltipContent>
             </Tooltip>
 
@@ -736,18 +786,20 @@ export function CanvasEditor({
             {/* Undo button */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10"
-                  onClick={undo}
-                  disabled={!canUndo}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 7v6h6"/>
-                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
-                  </svg>
-                </Button>
+                <span tabIndex={0}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={undo}
+                    disabled={!canUndo}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 7v6h6"/>
+                      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                    </svg>
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="left">
                 <p>Undo</p>
@@ -757,18 +809,20 @@ export function CanvasEditor({
             {/* Redo button */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10"
-                  onClick={redo}
-                  disabled={!canRedo}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 7v6h-6"/>
-                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
-                  </svg>
-                </Button>
+                <span tabIndex={0}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={redo}
+                    disabled={!canRedo}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 7v6h-6"/>
+                      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+                    </svg>
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="left">
                 <p>Redo</p>
