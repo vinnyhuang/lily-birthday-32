@@ -5,7 +5,7 @@ export interface Sticker {
   id: string;
   emoji: string;
   label: string;
-  category: "emoji" | "stamp" | "washi" | "doodle" | "shape" | "photo-corner";
+  category: "emoji" | "stamp" | "washi";
 }
 
 export const stickers: Sticker[] = [

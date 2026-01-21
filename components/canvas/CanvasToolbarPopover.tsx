@@ -6,21 +6,16 @@ import { StickerPicker } from "@/components/decorations/StickerPicker";
 import { BackgroundPicker } from "@/components/decorations/BackgroundPicker";
 import { PhotoPicker } from "@/components/decorations/PhotoPicker";
 import { WashiTapePicker } from "@/components/decorations/WashiTapePicker";
-import { DecorativeElementsPicker } from "@/components/decorations/DecorativeElementsPicker";
 import { Sticker } from "@/components/decorations/stickers";
 import { WashiTape } from "@/components/decorations/washiTapes";
-import { Doodle } from "@/components/decorations/doodles";
-import { ShapeDefinition } from "@/components/decorations/shapes";
-import { PhotoCorner } from "@/components/decorations/photoCorners";
 import { CanvasBackground, MediaItem } from "@/lib/canvas/types";
 
-export type PopoverType = "photos" | "stickers" | "washi" | "decor" | "text" | "background" | null;
+export type PopoverType = "photos" | "stickers" | "washi" | "text" | "background" | null;
 
 interface CanvasToolbarPopoverProps {
   type: PopoverType;
   onClose: () => void;
   onAddSticker: (sticker: Sticker, src: string) => void;
-  onAddNativeShape: (shape: ShapeDefinition) => void;
   onChangeBackground: (background: CanvasBackground) => void;
   onAddText: () => void;
   onAddPhotos: (media: MediaItem[]) => void;
@@ -33,7 +28,6 @@ export function CanvasToolbarPopover({
   type,
   onClose,
   onAddSticker,
-  onAddNativeShape,
   onChangeBackground,
   onAddText,
   onAddPhotos,
@@ -84,33 +78,6 @@ export function CanvasToolbarPopover({
     onClose();
   };
 
-  const handleAddDoodle = (doodle: Doodle, dataUrl: string) => {
-    const stickerLike: Sticker = {
-      id: doodle.id,
-      emoji: doodle.label,
-      label: doodle.label,
-      category: "doodle",
-    };
-    onAddSticker(stickerLike, dataUrl);
-    onClose();
-  };
-
-  const handleAddNativeShape = (shape: ShapeDefinition) => {
-    onAddNativeShape(shape);
-    onClose();
-  };
-
-  const handleAddCorner = (corner: PhotoCorner, dataUrl: string) => {
-    const stickerLike: Sticker = {
-      id: corner.id,
-      emoji: corner.label,
-      label: corner.label,
-      category: "photo-corner",
-    };
-    onAddSticker(stickerLike, dataUrl);
-    onClose();
-  };
-
   const handleAddText = () => {
     onAddText();
     onClose();
@@ -125,7 +92,6 @@ export function CanvasToolbarPopover({
     photos: "Add Photos",
     stickers: "Stickers",
     washi: "Washi Tape",
-    decor: "Decorations",
     text: "Add Text",
     background: "Background",
   };
@@ -166,14 +132,6 @@ export function CanvasToolbarPopover({
 
         {type === "washi" && (
           <WashiTapePicker onSelect={handleAddWashiTape} />
-        )}
-
-        {type === "decor" && (
-          <DecorativeElementsPicker
-            onSelectDoodle={handleAddDoodle}
-            onSelectNativeShape={handleAddNativeShape}
-            onSelectCorner={handleAddCorner}
-          />
         )}
 
         {type === "text" && (

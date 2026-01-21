@@ -5,7 +5,6 @@ import { Stage, Layer } from "react-konva";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import { CanvasSticker } from "./CanvasSticker";
-import { CanvasShape } from "./CanvasShape";
 import { CanvasText } from "./CanvasText";
 import { CanvasBackground } from "./CanvasBackground";
 import { AlignmentGuides } from "./AlignmentGuides";
@@ -19,15 +18,12 @@ import {
   CanvasImageElement,
   CanvasStickerElement,
   CanvasTextElement,
-  CanvasShapeElement,
   FrameStyle,
   FilterType,
   createStickerElement,
   createTextElement,
   createImageElement,
-  createShapeElement,
 } from "@/lib/canvas/types";
-import type { ShapeDefinition } from "@/components/decorations/shapes";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -305,7 +301,7 @@ export function CanvasEditor({
 
   // Wrapper for element onChange that handles multi-select
   const handleElementChange = useCallback(
-    (id: string, updates: Partial<CanvasImageElement | CanvasStickerElement | CanvasTextElement | CanvasShapeElement>) => {
+    (id: string, updates: Partial<CanvasImageElement | CanvasStickerElement | CanvasTextElement>) => {
       const keys = Object.keys(updates);
       const isPositionOnlyUpdate = keys.every(k => k === 'x' || k === 'y');
       const isTransformUpdate = keys.some(k => k === 'width' || k === 'height' || k === 'rotation');
@@ -384,20 +380,6 @@ export function CanvasEditor({
         maxZIndex + 1
       );
       addElement(stickerElement);
-    },
-    [addElement, canvasData.width, canvasData.height, maxZIndex]
-  );
-
-  // Handle adding a native shape
-  const handleAddNativeShape = useCallback(
-    (shape: ShapeDefinition) => {
-      const shapeElement = createShapeElement(
-        shape.id,
-        { x: canvasData.width / 2 - 75, y: canvasData.height / 2 - 50 },
-        maxZIndex + 1,
-        { fill: shape.defaultFill }
-      );
-      addElement(shapeElement);
     },
     [addElement, canvasData.width, canvasData.height, maxZIndex]
   );
@@ -544,11 +526,6 @@ export function CanvasEditor({
         <path d="M4 12h16"/>
         <path d="M4 18h16"/>
         <rect x="2" y="4" width="20" height="16" rx="2" strokeDasharray="4 2"/>
-      </svg>
-    )},
-    { id: "decor", label: "Decor", icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/>
       </svg>
     )},
     { id: "text", label: "Text", icon: (
@@ -698,28 +675,7 @@ export function CanvasEditor({
                       />
                     );
                   }
-                  if (element.type === "shape") {
-                    return (
-                      <CanvasShape
-                        key={element.id}
-                        element={transformedElement as CanvasShapeElement}
-                        isSelected={selectedIds.includes(element.id)}
-                        onSelect={(e) => handleElementSelect(element.id, e)}
-                        onChange={(updates) => handleElementChange(element.id, updates)}
-                        onDragStart={() => {
-                          handleMultiDragStart(element.id);
-                          onGuideDragStart(element.id);
-                        }}
-                        onDragMove={(newX, newY) => {
-                          handleMultiDragMove(element.id, newX, newY);
-                          return onGuideDragMove(element, newX, newY);
-                        }}
-                        onDragEnd={onGuideDragEnd}
-                        onTransform={(scaleX, scaleY) => handleMultiTransform(element.id, scaleX, scaleY)}
-                      />
-                    );
-                  }
-                  return null;
+                                    return null;
                 })}
 
                 {/* Alignment Guides */}
@@ -741,7 +697,6 @@ export function CanvasEditor({
               type={openPopover}
               onClose={() => setOpenPopover(null)}
               onAddSticker={handleAddSticker}
-              onAddNativeShape={handleAddNativeShape}
               onChangeBackground={setBackground}
               onAddText={handleAddText}
               onAddPhotos={handleAddPhotos}
