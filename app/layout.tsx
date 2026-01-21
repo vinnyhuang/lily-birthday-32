@@ -29,7 +29,7 @@ import "./globals.css";
 
 // Clean/Modern fonts
 const nunito = Nunito({
-  variable: "--font-nunito",
+  variable: "--font-body", // Primary UI font
   subsets: ["latin"],
   display: "swap",
 });
@@ -49,7 +49,7 @@ const montserrat = Montserrat({
 
 // Handwritten/Script fonts
 const caveat = Caveat({
-  variable: "--font-caveat",
+  variable: "--font-display", // Display/heading font for UI
   subsets: ["latin"],
   display: "swap",
 });
@@ -145,7 +145,7 @@ const cormorantGaramond = Cormorant_Garamond({
 
 // Monospace
 const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-ibm-plex-mono",
+  variable: "--font-mono", // Monospace font for UI
   weight: ["400", "500"],
   subsets: ["latin"],
   display: "swap",
