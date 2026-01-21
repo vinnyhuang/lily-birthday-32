@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Stage, Layer } from "react-konva";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DecorationPanel, TabType } from "@/components/decorations/DecorationPanel";
+import { CanvasToolbarPopover, PopoverType } from "./CanvasToolbarPopover";
 import type { Sticker } from "@/components/decorations/stickers";
 
 interface CanvasEditorProps {
@@ -47,8 +47,7 @@ export function CanvasEditor({
 }: CanvasEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 500 });
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("photos");
+  const [openPopover, setOpenPopover] = useState<PopoverType>(null);
 
   // Track drag start position for multi-select move
   const dragStartRef = useRef<{ id: string; x: number; y: number } | null>(null);
@@ -468,10 +467,9 @@ export function CanvasEditor({
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Helper to open drawer with specific tab
-  const openDrawerTab = (tab: TabType) => {
-    setActiveTab(tab);
-    setDrawerOpen(true);
+  // Toggle popover for a specific type
+  const togglePopover = (type: PopoverType) => {
+    setOpenPopover((prev) => (prev === type ? null : type));
   };
 
   // Check if all selected elements are of the same type
@@ -486,15 +484,15 @@ export function CanvasEditor({
     : [];
 
   // Toolbar buttons configuration
-  const toolbarButtons = [
-    { id: "photos" as TabType, label: "Photo", icon: (
+  const toolbarButtons: { id: PopoverType; label: string; icon: React.ReactNode }[] = [
+    { id: "photos", label: "Photo", icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
         <circle cx="9" cy="9" r="2"/>
         <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
       </svg>
     )},
-    { id: "stickers" as TabType, label: "Sticker", icon: (
+    { id: "stickers", label: "Sticker", icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/>
         <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
@@ -502,7 +500,7 @@ export function CanvasEditor({
         <line x1="15" x2="15.01" y1="9" y2="9"/>
       </svg>
     )},
-    { id: "washi" as TabType, label: "Washi", icon: (
+    { id: "washi", label: "Washi", icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 6h16"/>
         <path d="M4 12h16"/>
@@ -510,19 +508,19 @@ export function CanvasEditor({
         <rect x="2" y="4" width="20" height="16" rx="2" strokeDasharray="4 2"/>
       </svg>
     )},
-    { id: "decor" as TabType, label: "Decor", icon: (
+    { id: "decor", label: "Decor", icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/>
       </svg>
     )},
-    { id: "text" as TabType, label: "Text", icon: (
+    { id: "text", label: "Text", icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="4 7 4 4 20 4 20 7"/>
         <line x1="9" x2="15" y1="20" y2="20"/>
         <line x1="12" x2="12" y1="4" y2="20"/>
       </svg>
     )},
-    { id: "background" as TabType, label: "Background", icon: (
+    { id: "background", label: "Background", icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="18" height="18" x="3" y="3" rx="2"/>
         <path d="M3 9h18"/>
@@ -544,10 +542,10 @@ export function CanvasEditor({
             <Tooltip key={btn.id}>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant={openPopover === btn.id ? "secondary" : "ghost"}
                   size="icon"
                   className="h-10 w-10"
-                  onClick={() => openDrawerTab(btn.id)}
+                  onClick={() => togglePopover(btn.id)}
                 >
                   {btn.icon}
                 </Button>
@@ -783,26 +781,24 @@ export function CanvasEditor({
                 />
               </div>
             )}
+
+            {/* Toolbar Popover Menu */}
+            <CanvasToolbarPopover
+              type={openPopover}
+              onClose={() => setOpenPopover(null)}
+              onAddSticker={handleAddSticker}
+              onChangeBackground={setBackground}
+              onAddText={handleAddText}
+              onAddPhotos={handleAddPhotos}
+              currentBackground={canvasData.background}
+              media={media}
+              onCanvasMediaIds={onCanvasMediaIds}
+            />
           </div>
         </div>
 
         {/* Right placeholder to balance the layout */}
         <div style={{ width: toolbarWidth }} className="hidden sm:block" />
-
-        {/* Decoration Panel Drawer */}
-        <DecorationPanel
-          onAddSticker={handleAddSticker}
-          onChangeBackground={setBackground}
-          onAddText={handleAddText}
-          onAddPhotos={handleAddPhotos}
-          currentBackground={canvasData.background}
-          media={media}
-          onCanvasMediaIds={onCanvasMediaIds}
-          open={drawerOpen}
-          onOpenChange={setDrawerOpen}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
       </div>
     </TooltipProvider>
   );
