@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { useGoogleMaps } from "@/lib/google/useGoogleMaps";
+import { getProxyUrl } from "@/lib/s3";
 
 interface PhotoLocation {
   id: string;
   url: string;
+  s3Key: string;
   caption: string | null;
   location: string | null;
   latitude: number;
@@ -100,7 +102,7 @@ export function PhotoMap({ photos, className = "" }: PhotoMapProps) {
 
     // Photo thumbnail
     const img = document.createElement("img");
-    img.src = photo.url;
+    img.src = getProxyUrl(photo.s3Key);
     img.className = "w-12 h-12 rounded-lg object-cover border-2 border-white shadow-lg";
     if (isSelected) {
       img.className += " ring-2 ring-[#E8846E] ring-offset-2";
@@ -217,7 +219,7 @@ export function PhotoMap({ photos, className = "" }: PhotoMapProps) {
       {selectedPhoto && (
         <Card className="absolute bottom-4 left-4 right-4 p-3 bg-white/95 backdrop-blur-sm shadow-lg flex items-center gap-3">
           <img
-            src={selectedPhoto.url}
+            src={getProxyUrl(selectedPhoto.s3Key)}
             alt={selectedPhoto.caption || "Photo"}
             className="w-16 h-16 rounded-lg object-cover photo-shadow"
           />

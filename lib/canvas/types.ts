@@ -46,7 +46,8 @@ export interface SnapResult {
 export interface CanvasImageElement extends CanvasElementBase {
   type: "image";
   mediaId: string;
-  src: string;
+  s3Key: string;
+  src: string; // Kept for backwards compatibility, but s3Key is preferred
   frameStyle?: FrameStyle;
   borderColor?: string; // For simple-border and rounded frames
 }
@@ -153,7 +154,8 @@ export function createImageElement(
     id: `img-${media.id}`,
     type: "image",
     mediaId: media.id,
-    src: media.url,
+    s3Key: media.s3Key,
+    src: media.url, // Kept for backwards compatibility
     x: position.x,
     y: position.y,
     width: position.width,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getPresignedViewUrl } from "@/lib/s3";
+import { getProxyUrl } from "@/lib/s3";
 
 type RouteContext = {
   params: Promise<{ pageId: string }>;
@@ -30,13 +30,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
     }
 
-    // Generate presigned URLs for all media
-    const mediaWithUrls = await Promise.all(
-      page.media.map(async (item) => ({
-        ...item,
-        url: await getPresignedViewUrl(item.s3Key),
-      }))
-    );
+    // Add proxy URLs for all media (no more presigned URLs needed)
+    const mediaWithUrls = page.media.map((item) => ({
+      ...item,
+      url: getProxyUrl(item.s3Key),
+    }));
 
     return NextResponse.json({
       ...page,
@@ -85,13 +83,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       },
     });
 
-    // Generate fresh presigned URLs for all media
-    const mediaWithUrls = await Promise.all(
-      page.media.map(async (item) => ({
-        ...item,
-        url: await getPresignedViewUrl(item.s3Key),
-      }))
-    );
+    // Add proxy URLs for all media (no more presigned URLs needed)
+    const mediaWithUrls = page.media.map((item) => ({
+      ...item,
+      url: getProxyUrl(item.s3Key),
+    }));
 
     return NextResponse.json({
       ...page,

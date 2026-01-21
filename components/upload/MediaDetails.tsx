@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { LocationAutocomplete } from "./LocationAutocomplete";
 import { formatDateTaken } from "@/lib/exif/extractExif";
+import { getProxyUrl } from "@/lib/s3";
 
 interface MediaItem {
   id: string;
   type: "photo" | "video";
   url: string;
+  s3Key: string;
   caption: string | null;
   location: string | null;
   dateTaken: string | null;
@@ -84,13 +86,13 @@ export function MediaDetails({ media, open, onClose, onSave }: MediaDetailsProps
             {media.type === "photo" ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={media.url}
+                src={getProxyUrl(media.s3Key)}
                 alt="Photo preview"
                 className="w-full h-full object-cover"
               />
             ) : (
               <video
-                src={media.url}
+                src={getProxyUrl(media.s3Key)}
                 className="w-full h-full object-cover"
                 controls
               />

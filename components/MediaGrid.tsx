@@ -13,11 +13,13 @@ import {
 import { Card } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/upload/LocationAutocomplete";
 import { formatDateTaken } from "@/lib/exif/extractExif";
+import { getProxyUrl } from "@/lib/s3";
 
 export interface MediaItem {
   id: string;
   type: "photo" | "video";
   url: string;
+  s3Key: string;
   caption: string | null;
   location: string | null;
   latitude: number | null;
@@ -94,13 +96,13 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
           >
             {item.type === "photo" ? (
               <img
-                src={item.url}
+                src={getProxyUrl(item.s3Key)}
                 alt={item.caption || "Memory"}
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
               <video
-                src={item.url}
+                src={getProxyUrl(item.s3Key)}
                 className="w-full h-full object-cover"
                 muted
                 playsInline
@@ -179,13 +181,13 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
               <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
                 {selectedMedia.type === "photo" ? (
                   <img
-                    src={selectedMedia.url}
+                    src={getProxyUrl(selectedMedia.s3Key)}
                     alt={selectedMedia.caption || "Memory"}
                     className="absolute inset-0 w-full h-full object-contain"
                   />
                 ) : (
                   <video
-                    src={selectedMedia.url}
+                    src={getProxyUrl(selectedMedia.s3Key)}
                     className="w-full h-full"
                     controls
                   />

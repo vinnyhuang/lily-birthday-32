@@ -2,7 +2,6 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
-  GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -29,15 +28,6 @@ export async function getPresignedUploadUrl(
   return getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
 }
 
-export async function getPresignedViewUrl(key: string): Promise<string> {
-  const command = new GetObjectCommand({
-    Bucket: bucket,
-    Key: key,
-  });
-
-  return getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
-}
-
 export async function deleteObject(key: string): Promise<void> {
   const command = new DeleteObjectCommand({
     Bucket: bucket,
@@ -55,4 +45,12 @@ export function generateS3Key(
   const timestamp = Date.now();
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
   return `uploads/${guestId}/${type}s/${timestamp}-${sanitizedFilename}`;
+}
+
+/**
+ * Generate a proxy URL for an S3 key
+ * This routes through our API to avoid CORS issues and enable canvas export
+ */
+export function getProxyUrl(s3Key: string): string {
+  return `/api/image-proxy?key=${encodeURIComponent(s3Key)}`;
 }

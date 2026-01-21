@@ -6,6 +6,7 @@ import useImage from "use-image";
 import Konva from "konva";
 import { CanvasImageElement, SnapResult, FrameStyle } from "@/lib/canvas/types";
 import { generateTapeDataUrl, generateFloralOverlayUrl, generateCelebrationOverlayUrl } from "@/lib/canvas/frames";
+import { getProxyUrl } from "@/lib/s3";
 
 interface CanvasImageProps {
   element: CanvasImageElement;
@@ -28,7 +29,9 @@ export function CanvasImage({
   onDragEnd,
   onTransform,
 }: CanvasImageProps) {
-  const [image] = useImage(element.src, "anonymous");
+  // Use proxy URL for S3 images to avoid CORS issues and enable canvas export
+  const imageUrl = element.s3Key ? getProxyUrl(element.s3Key) : element.src;
+  const [image] = useImage(imageUrl, "anonymous");
   const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
 

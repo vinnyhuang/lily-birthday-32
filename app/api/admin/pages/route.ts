@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyAdminRequest } from "@/lib/auth";
-import { getPresignedViewUrl } from "@/lib/s3";
+import { getProxyUrl } from "@/lib/s3";
 
 export async function GET(request: NextRequest) {
   const isAuthorized = await verifyAdminRequest(request);
@@ -35,18 +35,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Generate presigned URLs for media thumbnails
-    const pagesWithUrls = await Promise.all(
-      pages.map(async (page) => ({
-        ...page,
-        media: await Promise.all(
-          page.media.map(async (item) => ({
-            ...item,
-            url: await getPresignedViewUrl(item.s3Key),
-          }))
-        ),
-      }))
-    );
+    // Add proxy URLs for media thumbnails (no more presigned URLs needed)
+    const pagesWithUrls = pages.map((page) => ({
+      ...page,
+      media: page.media.map((item) => ({
+        ...item,
+        url: getProxyUrl(item.s3Key),
+      })),
+    }));
 
     return NextResponse.json(pagesWithUrls);
   } catch (error) {

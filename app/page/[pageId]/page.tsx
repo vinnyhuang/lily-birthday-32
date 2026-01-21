@@ -239,6 +239,7 @@ export default function PageBuilder() {
                 .map((m) => ({
                   id: m.id,
                   url: m.url,
+                  s3Key: m.s3Key,
                   caption: m.caption,
                   location: m.location,
                   latitude: m.latitude,

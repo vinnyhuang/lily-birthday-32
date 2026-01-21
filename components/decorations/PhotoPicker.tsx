@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MediaItem } from "@/lib/canvas/types";
 import { Button } from "@/components/ui/button";
+import { getProxyUrl } from "@/lib/s3";
 
 interface PhotoPickerProps {
   media: MediaItem[];
@@ -100,7 +101,7 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.url}
+                    src={getProxyUrl(photo.s3Key)}
                     alt={photo.caption || "Photo"}
                     className="w-full h-full object-cover"
                   />
@@ -148,7 +149,7 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={photo.url}
+                  src={getProxyUrl(photo.s3Key)}
                   alt={photo.caption || "Photo"}
                   className="w-full h-full object-cover"
                 />
