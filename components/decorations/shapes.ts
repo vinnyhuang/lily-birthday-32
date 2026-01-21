@@ -1,6 +1,147 @@
 // Shape definitions for scrapbook decorations
-// Decorative frames and containers
+// These define native canvas shapes (not SVG stickers)
 
+import { ShapeType } from "@/lib/canvas/types";
+
+export interface ShapeDefinition {
+  id: ShapeType;
+  label: string;
+  category: "basic" | "banners" | "labels" | "bubbles";
+  defaultFill: string;
+  icon: string; // SVG path for preview
+}
+
+export const shapeDefinitions: ShapeDefinition[] = [
+  // Basic Shapes
+  {
+    id: "rectangle",
+    label: "Rectangle",
+    category: "basic",
+    defaultFill: "#FFE4E1",
+    icon: '<rect x="4" y="6" width="24" height="12" rx="2" />',
+  },
+  {
+    id: "oval",
+    label: "Oval",
+    category: "basic",
+    defaultFill: "#E8F4FD",
+    icon: '<ellipse cx="16" cy="12" rx="12" ry="6" />',
+  },
+  {
+    id: "pill",
+    label: "Pill",
+    category: "basic",
+    defaultFill: "#E8F8E8",
+    icon: '<rect x="4" y="7" width="24" height="10" rx="5" />',
+  },
+  {
+    id: "heart",
+    label: "Heart",
+    category: "basic",
+    defaultFill: "#FFD6E0",
+    icon: '<path d="M16 20 C16 20 6 14 6 9 C6 6 8 4 10.5 4 C12.5 4 14.5 5 16 7 C17.5 5 19.5 4 21.5 4 C24 4 26 6 26 9 C26 14 16 20 16 20Z" />',
+  },
+  {
+    id: "star",
+    label: "Star",
+    category: "basic",
+    defaultFill: "#FFF3CD",
+    icon: '<path d="M16 3 L18.5 9 L25 9 L20 13 L22 20 L16 16 L10 20 L12 13 L7 9 L13.5 9 Z" />',
+  },
+  {
+    id: "cloud",
+    label: "Cloud",
+    category: "basic",
+    defaultFill: "#E8F4FD",
+    icon: '<path d="M8 16 Q4 16 4 12 Q4 8 8 8 Q8 5 13 5 Q17 5 18 7 Q20 5 24 7 Q26 9 26 12 Q26 16 22 16 Z" />',
+  },
+  {
+    id: "arrow",
+    label: "Arrow",
+    category: "basic",
+    defaultFill: "#FFE4C4",
+    icon: '<path d="M4 9 L18 9 L18 5 L28 12 L18 19 L18 15 L4 15 Z" />',
+  },
+  {
+    id: "scalloped",
+    label: "Scalloped",
+    category: "basic",
+    defaultFill: "#F0E6FA",
+    icon: '<path d="M4 8 Q8 4 12 8 Q16 4 20 8 Q24 4 28 8 L28 16 Q24 20 20 16 Q16 20 12 16 Q8 20 4 16 Z" />',
+  },
+  {
+    id: "starburst",
+    label: "Starburst",
+    category: "basic",
+    defaultFill: "#FFFACD",
+    icon: '<path d="M16 3 L17.5 8 L23 5 L19.5 10 L26 12 L19.5 14 L23 19 L17.5 16 L16 21 L14.5 16 L9 19 L12.5 14 L6 12 L12.5 10 L9 5 L14.5 8 Z" />',
+  },
+
+  // Banners
+  {
+    id: "banner-ribbon",
+    label: "Ribbon",
+    category: "banners",
+    defaultFill: "#F5B8C4",
+    icon: '<path d="M2 8 L6 4 L6 16 L2 12 Z M30 8 L26 4 L26 16 L30 12 Z" fill-opacity="0.5" /><rect x="6" y="4" width="20" height="12" />',
+  },
+  {
+    id: "banner-flag",
+    label: "Flag",
+    category: "banners",
+    defaultFill: "#B8D4F5",
+    icon: '<path d="M6 4 L26 4 L26 14 L16 20 L6 14 Z" />',
+  },
+
+  // Labels
+  {
+    id: "ticket",
+    label: "Ticket",
+    category: "labels",
+    defaultFill: "#FFF8F0",
+    icon: '<path d="M6 4 L26 4 Q28 4 28 6 L28 9 Q26 9 26 11 Q26 13 28 13 L28 18 Q28 20 26 20 L6 20 Q4 20 4 18 L4 13 Q6 13 6 11 Q6 9 4 9 L4 6 Q4 4 6 4" />',
+  },
+  {
+    id: "tag",
+    label: "Tag",
+    category: "labels",
+    defaultFill: "#E8E8E8",
+    icon: '<path d="M10 4 L26 4 Q28 4 28 6 L28 18 Q28 20 26 20 L10 20 L4 12 Z" /><circle cx="9" cy="12" r="2" fill="white" />',
+  },
+
+  // Bubbles
+  {
+    id: "speech-bubble",
+    label: "Speech",
+    category: "bubbles",
+    defaultFill: "#FFFFFF",
+    icon: '<path d="M6 4 L26 4 Q28 4 28 6 L28 14 Q28 16 26 16 L12 16 L6 22 L8 16 L6 16 Q4 16 4 14 L4 6 Q4 4 6 4" />',
+  },
+  {
+    id: "thought-bubble",
+    label: "Thought",
+    category: "bubbles",
+    defaultFill: "#FFFFFF",
+    icon: '<ellipse cx="16" cy="10" rx="10" ry="6" /><circle cx="9" cy="18" r="2" /><circle cx="6" cy="21" r="1.5" />',
+  },
+];
+
+// Get shapes grouped by category
+export function getShapesByCategory() {
+  return {
+    basic: shapeDefinitions.filter((s) => s.category === "basic"),
+    banners: shapeDefinitions.filter((s) => s.category === "banners"),
+    labels: shapeDefinitions.filter((s) => s.category === "labels"),
+    bubbles: shapeDefinitions.filter((s) => s.category === "bubbles"),
+  };
+}
+
+// Generate an SVG preview for a shape
+export function generateShapePreviewSvg(shape: ShapeDefinition, size: number = 32): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size * 0.75}" viewBox="0 0 32 24" fill="${shape.defaultFill}" stroke="#888" stroke-width="1">${shape.icon}</svg>`;
+}
+
+// Legacy exports for backwards compatibility
 export interface Shape {
   id: string;
   label: string;
@@ -8,147 +149,37 @@ export interface Shape {
 }
 
 export const shapes: Shape[] = [
-  // Banners
   { id: "banner-ribbon", label: "Ribbon Banner", type: "banner" },
   { id: "banner-flag", label: "Flag Banner", type: "banner" },
-
-  // Tickets/Labels
   { id: "ticket-classic", label: "Classic Ticket", type: "ticket" },
   { id: "label-tag", label: "Tag Label", type: "ticket" },
-
-  // Speech Bubbles
   { id: "bubble-speech", label: "Speech Bubble", type: "bubble" },
   { id: "bubble-thought", label: "Thought Bubble", type: "bubble" },
-
-  // Decorative Frames
-  { id: "frame-scallop", label: "Scalloped Frame", type: "frame" },
-  { id: "frame-bracket", label: "Bracket Frame", type: "frame" },
 ];
 
-// SVG generators for each shape type
-function generateBannerSvg(id: string, fillColor: string = "#F5B8C4", strokeColor: string = "#E88A9E"): string {
-  switch (id) {
-    case "banner-ribbon":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="180" height="60" viewBox="0 0 180 60">
-          <path d="M 0 15 L 15 0 L 15 45 L 0 30 Z" fill="${strokeColor}"/>
-          <path d="M 180 15 L 165 0 L 165 45 L 180 30 Z" fill="${strokeColor}"/>
-          <path d="M 15 5 L 165 5 L 165 45 L 15 45 Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-          <path d="M 15 5 L 0 20 L 15 5" fill="none" stroke="${strokeColor}" stroke-width="0"/>
-        </svg>
-      `;
-    case "banner-flag":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="140" height="70" viewBox="0 0 140 70">
-          <path d="M 10 5 L 130 5 L 130 50 L 70 65 L 10 50 Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-        </svg>
-      `;
-    default:
-      return "";
-  }
-}
-
-function generateTicketSvg(id: string, fillColor: string = "#FFF8F0", strokeColor: string = "#D4C8BC"): string {
-  switch (id) {
-    case "ticket-classic":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="160" height="70" viewBox="0 0 160 70">
-          <defs>
-            <clipPath id="ticket-clip">
-              <path d="M 8 0 L 152 0 Q 160 0 160 8 L 160 27 Q 152 27 152 35 Q 152 43 160 43 L 160 62 Q 160 70 152 70 L 8 70 Q 0 70 0 62 L 0 43 Q 8 43 8 35 Q 8 27 0 27 L 0 8 Q 0 0 8 0"/>
-            </clipPath>
-          </defs>
-          <path d="M 8 0 L 152 0 Q 160 0 160 8 L 160 27 Q 152 27 152 35 Q 152 43 160 43 L 160 62 Q 160 70 152 70 L 8 70 Q 0 70 0 62 L 0 43 Q 8 43 8 35 Q 8 27 0 27 L 0 8 Q 0 0 8 0" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="4 2"/>
-        </svg>
-      `;
-    case "label-tag":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="100" height="60" viewBox="0 0 100 60">
-          <path d="M 15 5 L 85 5 Q 95 5 95 15 L 95 45 Q 95 55 85 55 L 15 55 Q 5 55 5 45 L 5 30 L 0 30 L 5 25 L 5 15 Q 5 5 15 5" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-          <circle cx="15" cy="30" r="4" fill="${strokeColor}"/>
-        </svg>
-      `;
-    default:
-      return "";
-  }
-}
-
-function generateBubbleSvg(id: string, fillColor: string = "#FFFFFF", strokeColor: string = "#D4C8BC"): string {
-  switch (id) {
-    case "bubble-speech":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="150" height="100" viewBox="0 0 150 100">
-          <path d="M 20 10 L 130 10 Q 140 10 140 20 L 140 60 Q 140 70 130 70 L 50 70 L 30 90 L 35 70 L 20 70 Q 10 70 10 60 L 10 20 Q 10 10 20 10" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-        </svg>
-      `;
-    case "bubble-thought":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="150" height="110" viewBox="0 0 150 110">
-          <ellipse cx="75" cy="40" rx="65" ry="35" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-          <ellipse cx="35" cy="85" rx="10" ry="8" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-          <ellipse cx="18" cy="100" rx="6" ry="5" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
-        </svg>
-      `;
-    default:
-      return "";
-  }
-}
-
-function generateFrameSvg(id: string, strokeColor: string = "#D4C8BC"): string {
-  switch (id) {
-    case "frame-scallop":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="140" height="100" viewBox="0 0 140 100">
-          <path d="M 20 10
-            Q 10 10 10 20 Q 10 30 10 35 Q 0 35 0 50 Q 0 65 10 65 Q 10 70 10 80 Q 10 90 20 90
-            Q 30 100 50 90 Q 70 100 90 90 Q 110 100 120 90
-            Q 130 90 130 80 Q 130 70 130 65 Q 140 65 140 50 Q 140 35 130 35 Q 130 30 130 20 Q 130 10 120 10
-            Q 110 0 90 10 Q 70 0 50 10 Q 30 0 20 10"
-            fill="none" stroke="${strokeColor}" stroke-width="2.5"/>
-        </svg>
-      `;
-    case "frame-bracket":
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="140" height="90" viewBox="0 0 140 90">
-          <path d="M 15 10 L 5 10 L 5 45 L 0 45 L 5 45 L 5 80 L 15 80" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M 125 10 L 135 10 L 135 45 L 140 45 L 135 45 L 135 80 L 125 80" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
-      `;
-    default:
-      return "";
-  }
-}
-
-// Generate data URL for a shape
 export function generateShapeDataUrl(shape: Shape): string {
-  let svg = "";
+  // Map old shape ids to new definitions
+  const shapeMap: Record<string, ShapeDefinition | undefined> = {
+    "banner-ribbon": shapeDefinitions.find((s) => s.id === "banner-ribbon"),
+    "banner-flag": shapeDefinitions.find((s) => s.id === "banner-flag"),
+    "ticket-classic": shapeDefinitions.find((s) => s.id === "ticket"),
+    "label-tag": shapeDefinitions.find((s) => s.id === "tag"),
+    "bubble-speech": shapeDefinitions.find((s) => s.id === "speech-bubble"),
+    "bubble-thought": shapeDefinitions.find((s) => s.id === "thought-bubble"),
+  };
 
-  switch (shape.type) {
-    case "banner":
-      svg = generateBannerSvg(shape.id);
-      break;
-    case "ticket":
-      svg = generateTicketSvg(shape.id);
-      break;
-    case "bubble":
-      svg = generateBubbleSvg(shape.id);
-      break;
-    case "frame":
-      svg = generateFrameSvg(shape.id);
-      break;
-  }
+  const shapeDef = shapeMap[shape.id];
+  if (!shapeDef) return "";
 
-  if (!svg) return "";
-
-  return `data:image/svg+xml,${encodeURIComponent(svg.trim().replace(/\s+/g, " "))}`;
+  const svg = generateShapePreviewSvg(shapeDef, 160);
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-// Group shapes by type
 export function getShapesByType() {
   return {
     banners: shapes.filter((s) => s.type === "banner"),
     tickets: shapes.filter((s) => s.type === "ticket"),
     bubbles: shapes.filter((s) => s.type === "bubble"),
-    frames: shapes.filter((s) => s.type === "frame"),
+    frames: [],
   };
 }

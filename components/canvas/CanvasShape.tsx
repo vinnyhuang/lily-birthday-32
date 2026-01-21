@@ -1,15 +1,15 @@
 "use client";
 
-import { useRef, useEffect, useState, useMemo } from "react";
-import { Text, Transformer, Group, Rect, Shape } from "react-konva";
+import { useRef, useEffect } from "react";
+import { Group, Rect, Shape, Transformer } from "react-konva";
 import Konva from "konva";
-import { CanvasTextElement, SnapResult, ContainerShape } from "@/lib/canvas/types";
+import { CanvasShapeElement, ShapeType, SnapResult } from "@/lib/canvas/types";
 
-// Draw container shape based on type
-function drawContainerShape(
+// Draw shape based on type
+function drawShape(
   ctx: Konva.Context,
   shape: Konva.Shape,
-  shapeType: ContainerShape,
+  shapeType: ShapeType,
   width: number,
   height: number,
   fillColor: string,
@@ -19,21 +19,13 @@ function drawContainerShape(
 
   switch (shapeType) {
     case "oval": {
-      // Ellipse/oval shape
-      ctx.ellipse(
-        width / 2,
-        height / 2,
-        width / 2,
-        height / 2,
-        0, 0, Math.PI * 2
-      );
+      ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
       ctx.closePath();
       ctx.fillStrokeShape(shape);
       break;
     }
 
     case "pill": {
-      // Pill shape (rectangle with fully rounded ends)
       const pillRadius = Math.min(width, height) / 2;
       ctx.moveTo(pillRadius, 0);
       ctx.lineTo(width - pillRadius, 0);
@@ -50,13 +42,11 @@ function drawContainerShape(
     }
 
     case "heart": {
-      // Heart shape
       const heartWidth = width;
       const heartHeight = height;
       const topCurveHeight = heartHeight * 0.3;
 
       ctx.moveTo(heartWidth / 2, heartHeight);
-      // Left side
       ctx.bezierCurveTo(
         heartWidth * 0.1, heartHeight * 0.7,
         0, topCurveHeight,
@@ -67,7 +57,6 @@ function drawContainerShape(
         heartWidth / 2, topCurveHeight * 0.5,
         heartWidth / 2, topCurveHeight
       );
-      // Right side
       ctx.bezierCurveTo(
         heartWidth / 2, topCurveHeight * 0.5,
         heartWidth * 0.6, 0,
@@ -84,7 +73,6 @@ function drawContainerShape(
     }
 
     case "star": {
-      // 5-pointed star
       const cx = width / 2;
       const cy = height / 2;
       const outerRadius = Math.min(width, height) / 2;
@@ -108,41 +96,32 @@ function drawContainerShape(
     }
 
     case "scalloped": {
-      // Scalloped rectangle with wavy edges
       const scallops = Math.max(3, Math.floor(width / 40));
       const scallopsV = Math.max(2, Math.floor(height / 40));
       const scallopWidth = width / scallops;
       const scallopHeight = height / scallopsV;
       const depth = Math.min(8, Math.min(scallopWidth, scallopHeight) * 0.3);
 
-      // Top edge
       ctx.moveTo(0, depth);
       for (let i = 0; i < scallops; i++) {
-        const x1 = i * scallopWidth;
         const x2 = (i + 0.5) * scallopWidth;
         const x3 = (i + 1) * scallopWidth;
         ctx.quadraticCurveTo(x2, -depth, x3, depth);
       }
 
-      // Right edge
       for (let i = 0; i < scallopsV; i++) {
-        const y1 = i * scallopHeight + depth;
         const y2 = (i + 0.5) * scallopHeight + depth;
         const y3 = (i + 1) * scallopHeight + depth;
         ctx.quadraticCurveTo(width + depth, y2, width, y3);
       }
 
-      // Bottom edge (right to left)
       for (let i = scallops - 1; i >= 0; i--) {
-        const x1 = (i + 1) * scallopWidth;
         const x2 = (i + 0.5) * scallopWidth;
         const x3 = i * scallopWidth;
         ctx.quadraticCurveTo(x2, height + depth, x3, height - depth);
       }
 
-      // Left edge (bottom to top)
       for (let i = scallopsV - 1; i >= 0; i--) {
-        const y1 = (i + 1) * scallopHeight + depth;
         const y2 = (i + 0.5) * scallopHeight + depth;
         const y3 = i * scallopHeight + depth;
         ctx.quadraticCurveTo(-depth, y2, 0, y3);
@@ -154,7 +133,6 @@ function drawContainerShape(
     }
 
     case "starburst": {
-      // Starburst/explosion shape
       const cx = width / 2;
       const cy = height / 2;
       const outerRadiusX = width / 2;
@@ -181,44 +159,31 @@ function drawContainerShape(
     }
 
     case "cloud": {
-      // Cloud shape with bumpy top
       const baseY = height * 0.75;
 
-      // Start at bottom left
       ctx.moveTo(width * 0.1, baseY);
-
-      // Bottom edge
       ctx.lineTo(width * 0.9, baseY);
 
-      // Right bump
       ctx.bezierCurveTo(
         width, baseY,
         width, height * 0.5,
         width * 0.85, height * 0.4
       );
-
-      // Top right bump
       ctx.bezierCurveTo(
         width * 0.95, height * 0.2,
         width * 0.75, height * 0.1,
         width * 0.6, height * 0.2
       );
-
-      // Top middle bump
       ctx.bezierCurveTo(
         width * 0.55, 0,
         width * 0.35, 0,
         width * 0.3, height * 0.2
       );
-
-      // Top left bump
       ctx.bezierCurveTo(
         width * 0.15, height * 0.1,
         0, height * 0.25,
         width * 0.1, height * 0.45
       );
-
-      // Left edge back to start
       ctx.bezierCurveTo(
         0, height * 0.55,
         0, baseY,
@@ -231,7 +196,6 @@ function drawContainerShape(
     }
 
     case "arrow": {
-      // Right-pointing arrow shape
       const arrowHeadWidth = Math.min(width * 0.35, height * 0.5);
       const shaftHeight = height * 0.4;
       const shaftTop = (height - shaftHeight) / 2;
@@ -251,11 +215,9 @@ function drawContainerShape(
     }
 
     case "banner-ribbon": {
-      // Ribbon banner with folded ends
       const foldWidth = Math.min(20, width * 0.1);
       const foldHeight = Math.min(15, height * 0.25);
 
-      // Main banner body
       ctx.moveTo(foldWidth, 0);
       ctx.lineTo(width - foldWidth, 0);
       ctx.lineTo(width - foldWidth, height);
@@ -285,8 +247,7 @@ function drawContainerShape(
     }
 
     case "banner-flag": {
-      // Flag banner with pointed bottom
-      const pointHeight = Math.min(20, height * 0.25);
+      const pointHeight = Math.min(30, height * 0.2);
 
       ctx.moveTo(0, 0);
       ctx.lineTo(width, 0);
@@ -298,8 +259,7 @@ function drawContainerShape(
       break;
     }
 
-    case "ticket-classic": {
-      // Ticket with notched sides
+    case "ticket": {
       const notchRadius = Math.min(10, Math.min(width, height) * 0.1);
       const notchY = height / 2;
       const r = Math.min(cornerRadius, 8);
@@ -322,10 +282,9 @@ function drawContainerShape(
       break;
     }
 
-    case "label-tag": {
-      // Tag with left point and hole
-      const pointWidth = Math.min(20, width * 0.15);
-      const holeRadius = Math.min(5, height * 0.08);
+    case "tag": {
+      const pointWidth = Math.min(25, width * 0.15);
+      const holeRadius = Math.min(6, height * 0.08);
       const r = Math.min(cornerRadius, 8);
 
       ctx.moveTo(pointWidth, 0);
@@ -340,16 +299,15 @@ function drawContainerShape(
 
       // Draw hole
       ctx.beginPath();
-      ctx.arc(pointWidth + holeRadius + 5, height / 2, holeRadius, 0, Math.PI * 2);
+      ctx.arc(pointWidth + holeRadius + 6, height / 2, holeRadius, 0, Math.PI * 2);
       ctx.fillStyle = "white";
       ctx.fill();
       break;
     }
 
-    case "bubble-speech": {
-      // Speech bubble with tail
-      const tailWidth = Math.min(20, width * 0.15);
-      const tailHeight = Math.min(20, height * 0.25);
+    case "speech-bubble": {
+      const tailWidth = Math.min(25, width * 0.15);
+      const tailHeight = Math.min(25, height * 0.2);
       const bodyHeight = height - tailHeight;
       const r = Math.min(cornerRadius || 12, bodyHeight / 3);
 
@@ -370,18 +328,15 @@ function drawContainerShape(
       break;
     }
 
-    case "bubble-thought": {
-      // Thought bubble with cloud shape and dots
+    case "thought-bubble": {
       const cloudScale = 0.85;
       const cloudWidth = width * cloudScale;
       const cloudHeight = height * 0.75;
       const offsetX = (width - cloudWidth) / 2;
-      const offsetY = 0;
 
-      // Main cloud (ellipse approximation with bumps)
       ctx.ellipse(
         offsetX + cloudWidth / 2,
-        offsetY + cloudHeight / 2,
+        cloudHeight / 2,
         cloudWidth / 2,
         cloudHeight / 2,
         0, 0, Math.PI * 2
@@ -389,20 +344,18 @@ function drawContainerShape(
       ctx.fillStrokeShape(shape);
 
       // Thought dots
-      const dotY = height * 0.85;
       ctx.beginPath();
-      ctx.arc(width * 0.25, dotY, Math.min(8, width * 0.05), 0, Math.PI * 2);
+      ctx.arc(width * 0.25, height * 0.85, Math.min(10, width * 0.06), 0, Math.PI * 2);
       ctx.fillStrokeShape(shape);
 
       ctx.beginPath();
-      ctx.arc(width * 0.15, height * 0.95, Math.min(5, width * 0.03), 0, Math.PI * 2);
+      ctx.arc(width * 0.15, height * 0.95, Math.min(6, width * 0.04), 0, Math.PI * 2);
       ctx.fillStrokeShape(shape);
       break;
     }
 
     case "rectangle":
     default: {
-      // Simple rounded rectangle
       if (cornerRadius > 0) {
         const r = Math.min(cornerRadius, Math.min(width, height) / 2);
         ctx.moveTo(r, 0);
@@ -434,18 +387,18 @@ function shadeColor(color: string, percent: number): string {
   return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
 }
 
-interface CanvasTextProps {
-  element: CanvasTextElement;
+interface CanvasShapeProps {
+  element: CanvasShapeElement;
   isSelected: boolean;
   onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onChange: (updates: Partial<CanvasTextElement>) => void;
+  onChange: (updates: Partial<CanvasShapeElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
   onTransform?: (scaleX: number, scaleY: number) => void;
 }
 
-export function CanvasText({
+export function CanvasShape({
   element,
   isSelected,
   onSelect,
@@ -454,40 +407,18 @@ export function CanvasText({
   onDragMove,
   onDragEnd,
   onTransform,
-}: CanvasTextProps) {
+}: CanvasShapeProps) {
   const groupRef = useRef<Konva.Group>(null);
-  const boundsRectRef = useRef<Konva.Rect>(null);
-  const textRef = useRef<Konva.Text>(null);
+  const shapeRef = useRef<Konva.Shape>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [textHeight, setTextHeight] = useState(element.height);
 
-  // Compute Konva fontStyle from separate weight/style
-  const konvaFontStyle = useMemo(() => {
-    const parts: string[] = [];
-    if (element.fontStyle === "italic") parts.push("italic");
-    if (element.fontWeight === "bold") parts.push("bold");
-    return parts.join(" ") || "normal";
-  }, [element.fontStyle, element.fontWeight]);
-
-  // Update text height when text changes (for vertical alignment calculation)
+  // Attach transformer
   useEffect(() => {
-    if (textRef.current) {
-      const node = textRef.current as Konva.Text;
-      const measuredHeight = node.height();
-      if (measuredHeight !== textHeight) {
-        setTextHeight(measuredHeight);
-      }
-    }
-  }, [element.text, element.fontSize, element.fontFamily, element.width, element.backgroundPadding, textHeight]);
-
-  // Attach transformer to the bounds rect (not the group) so it doesn't expand with overflowing text
-  useEffect(() => {
-    if (isSelected && transformerRef.current && boundsRectRef.current && !isEditing) {
-      transformerRef.current.nodes([boundsRectRef.current]);
+    if (isSelected && transformerRef.current && shapeRef.current) {
+      transformerRef.current.nodes([shapeRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, isEditing, element.width, element.height, element.rotation]);
+  }, [isSelected]);
 
   const handleDragStart = () => {
     onDragStart?.();
@@ -510,215 +441,89 @@ export function CanvasText({
     onDragEnd?.();
   };
 
-  // Handle transform end - reads from boundsRect which is what the transformer attaches to
   const handleTransformEnd = () => {
-    const boundsNode = boundsRectRef.current;
-    const groupNode = groupRef.current;
-    if (!boundsNode || !groupNode) return;
+    const node = shapeRef.current;
+    if (!node) return;
 
-    const scaleX = boundsNode.scaleX();
-    const scaleY = boundsNode.scaleY();
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
 
-    // Get the absolute position of the bounds rect
-    const absPos = boundsNode.absolutePosition();
+    node.scaleX(1);
+    node.scaleY(1);
 
-    // Calculate new rotation: element's current rotation + any rotation added by transform
-    // boundsNode.rotation() is the local rotation delta from the transform
-    const newRotation = element.rotation + boundsNode.rotation();
-
-    // Reset the bounds rect transforms (it should always be at 0,0 with no rotation relative to Group)
-    boundsNode.scaleX(1);
-    boundsNode.scaleY(1);
-    boundsNode.x(0);
-    boundsNode.y(0);
-    boundsNode.rotation(0);
-
-    // Update element with new dimensions and rotation
     onChange({
-      x: absPos.x,
-      y: absPos.y,
-      width: Math.max(50, element.width * scaleX),
+      x: node.x(),
+      y: node.y(),
+      width: Math.max(30, element.width * scaleX),
       height: Math.max(30, element.height * scaleY),
-      rotation: newRotation,
+      rotation: node.rotation(),
     });
   };
 
-  const handleDoubleClick = () => {
-    const groupNode = groupRef.current;
-    if (!groupNode) return;
+  const cornerRadius = element.cornerRadius || 0;
 
-    setIsEditing(true);
-
-    const stage = groupNode.getStage();
-    if (!stage) return;
-
-    const stageBox = stage.container().getBoundingClientRect();
-
-    // Create textarea for editing - positioned at center top of canvas
-    const textarea = document.createElement("textarea");
-    document.body.appendChild(textarea);
-
-    // Calculate editor width and position (centered at top of canvas)
-    const editorWidth = Math.min(400, stageBox.width * 0.8);
-    const editorLeft = stageBox.left + (stageBox.width - editorWidth) / 2;
-    const editorTop = stageBox.top + 20; // 20px from top of canvas
-
-    textarea.value = element.text;
-    textarea.style.position = "absolute";
-    textarea.style.top = `${editorTop}px`;
-    textarea.style.left = `${editorLeft}px`;
-    textarea.style.width = `${editorWidth}px`;
-    textarea.style.minHeight = "60px";
-    textarea.style.maxHeight = "200px";
-    textarea.style.fontSize = `${Math.min(24, element.fontSize)}px`;
-    textarea.style.fontFamily = element.fontFamily;
-    textarea.style.fontWeight = element.fontWeight || "normal";
-    textarea.style.fontStyle = element.fontStyle || "normal";
-    textarea.style.textDecoration = element.textDecoration === "underline" ? "underline" : "none";
-    textarea.style.color = element.fill;
-    textarea.style.textAlign = element.align || "left";
-    textarea.style.lineHeight = String(element.lineHeight || 1.2);
-    textarea.style.border = "2px solid #F97066";
-    textarea.style.borderRadius = "8px";
-    textarea.style.padding = "12px";
-    textarea.style.background = "white";
-    textarea.style.outline = "none";
-    textarea.style.resize = "vertical";
-    textarea.style.zIndex = "1000";
-    textarea.style.boxShadow = "0 4px 20px rgba(0,0,0,0.15)";
-
-    textarea.focus();
-    textarea.select();
-
-    const handleBlur = () => {
-      onChange({ text: textarea.value || "Text" });
-      document.body.removeChild(textarea);
-      setIsEditing(false);
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) {
-        textarea.blur();
-      }
-    };
-
-    textarea.addEventListener("blur", handleBlur);
-    textarea.addEventListener("keydown", handleKeyDown);
-  };
-
-  // Background and text layout
-  // The text box is element.width x element.height
-  // Background fills the entire box
-  // Text is inset by padding and uses remaining width
-  const padding = element.backgroundPadding || 0;
-  const cornerRadius = element.backgroundCornerRadius || 0;
-  const containerShape = element.containerShape || "rectangle";
-  const hasContainer = !!element.backgroundColor;
-  const textWidth = Math.max(10, element.width - padding * 2);
-  const textAreaHeight = element.height - padding * 2;
-
-  // Calculate vertical alignment offset within the text box
-  // Text can overflow past the top (bottom align) or both edges (middle align)
-  const verticalAlignOffset = useMemo(() => {
-    if (!element.verticalAlign || element.verticalAlign === "top") return 0;
-    const availableHeight = textAreaHeight;
-    const textActualHeight = textHeight;
-    if (element.verticalAlign === "middle") {
-      // Center text - can overflow both top and bottom
-      return (availableHeight - textActualHeight) / 2;
-    }
-    if (element.verticalAlign === "bottom") {
-      // Align to bottom - can overflow past top
-      return availableHeight - textActualHeight;
-    }
-    return 0;
-  }, [element.verticalAlign, textAreaHeight, textHeight]);
-
-  // Common text properties
-  const textProps = {
-    text: element.text,
-    fontSize: element.fontSize,
-    fontFamily: element.fontFamily,
-    fontStyle: konvaFontStyle,
-    fill: element.fill,
-    align: element.align,
-    width: textWidth,
-    lineHeight: element.lineHeight || 1.2,
-    textDecoration: element.textDecoration === "underline" ? "underline" : undefined,
-  };
+  // Use Rect for simple rectangle, Shape for everything else
+  const isSimpleRect = element.shapeType === "rectangle";
 
   return (
     <>
-      <Group
-        ref={groupRef}
-        x={element.x}
-        y={element.y}
-        rotation={element.rotation}
-        draggable
-        onClick={(e) => onSelect(e)}
-        onTap={(e) => onSelect(e)}
-        onDblClick={handleDoubleClick}
-        onDblTap={handleDoubleClick}
-        onDragStart={handleDragStart}
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        visible={!isEditing}
-      >
-        {/* Invisible bounds rect for transformer attachment */}
-        <Rect
-          ref={boundsRectRef}
-          x={0}
-          y={0}
-          width={element.width}
-          height={element.height}
-          fill="transparent"
-          onTransformEnd={handleTransformEnd}
-        />
-
-        {/* Container shape (background) */}
-        {hasContainer && (
-          containerShape === "rectangle" ? (
-            <Rect
-              x={0}
-              y={0}
-              width={element.width}
-              height={element.height}
-              fill={element.backgroundColor}
-              cornerRadius={cornerRadius}
-              listening={false}
-            />
-          ) : (
-            <Shape
-              x={0}
-              y={0}
-              fill={element.backgroundColor}
-              sceneFunc={(ctx, shape) => {
-                drawContainerShape(
-                  ctx,
-                  shape,
-                  containerShape,
-                  element.width,
-                  element.height,
-                  element.backgroundColor || "#FFFFFF",
-                  cornerRadius
-                );
-              }}
-              listening={false}
-            />
-          )
+      <Group ref={groupRef}>
+        {isSimpleRect ? (
+          <Rect
+            ref={shapeRef as React.RefObject<Konva.Rect>}
+            x={element.x}
+            y={element.y}
+            width={element.width}
+            height={element.height}
+            rotation={element.rotation}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            cornerRadius={cornerRadius}
+            opacity={element.opacity ?? 1}
+            draggable
+            onClick={(e) => onSelect(e)}
+            onTap={(e) => onSelect(e)}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            onTransformEnd={handleTransformEnd}
+          />
+        ) : (
+          <Shape
+            ref={shapeRef}
+            x={element.x}
+            y={element.y}
+            width={element.width}
+            height={element.height}
+            rotation={element.rotation}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            opacity={element.opacity ?? 1}
+            draggable
+            onClick={(e) => onSelect(e)}
+            onTap={(e) => onSelect(e)}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            onTransformEnd={handleTransformEnd}
+            sceneFunc={(ctx, shape) => {
+              drawShape(
+                ctx,
+                shape,
+                element.shapeType,
+                element.width,
+                element.height,
+                element.fill,
+                cornerRadius
+              );
+            }}
+          />
         )}
-
-        {/* Text element - can overflow the bounds rect */}
-        <Text
-          ref={textRef}
-          x={padding}
-          y={padding + verticalAlignOffset}
-          {...textProps}
-          listening={false}
-        />
       </Group>
 
-      {isSelected && !isEditing && (
+      {isSelected && (
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}
@@ -733,13 +538,13 @@ export function CanvasText({
             "bottom-right",
           ]}
           boundBoxFunc={(oldBox, newBox) => {
-            if (newBox.width < 50 || newBox.height < 30) {
+            if (newBox.width < 30 || newBox.height < 30) {
               return oldBox;
             }
             return newBox;
           }}
           onTransform={() => {
-            const node = boundsRectRef.current;
+            const node = shapeRef.current;
             if (node && onTransform) {
               onTransform(node.scaleX(), node.scaleY());
             }

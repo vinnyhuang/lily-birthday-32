@@ -79,22 +79,86 @@ export interface CanvasStickerElement extends CanvasElementBase {
   strokeColor?: string; // For shape elements
 }
 
+// Container shape types for text boxes
+export type ContainerShape =
+  | "rectangle"
+  | "oval"
+  | "pill"
+  | "heart"
+  | "star"
+  | "scalloped"
+  | "starburst"
+  | "cloud"
+  | "arrow"
+  | "banner-ribbon"
+  | "banner-flag"
+  | "ticket-classic"
+  | "label-tag"
+  | "bubble-speech"
+  | "bubble-thought";
+
 // Text element
 export interface CanvasTextElement extends CanvasElementBase {
   type: "text";
   text: string;
+
+  // Typography
   fontFamily: string;
   fontSize: number;
-  fontStyle: "normal" | "bold" | "italic";
+  fontWeight: "normal" | "bold";
+  fontStyle: "normal" | "italic";
+  textDecoration: "none" | "underline";
+  lineHeight?: number;
+
+  // Colors
   fill: string;
+  backgroundColor?: string;
+
+  // Alignment
   align: "left" | "center" | "right";
+  verticalAlign?: "top" | "middle" | "bottom";
+
+  // Container styling
+  containerShape?: ContainerShape;
+  backgroundPadding?: number;
+  backgroundCornerRadius?: number;
+}
+
+// Shape types for standalone shapes
+export type ShapeType =
+  | "rectangle"
+  | "oval"
+  | "pill"
+  | "heart"
+  | "star"
+  | "scalloped"
+  | "starburst"
+  | "cloud"
+  | "arrow"
+  | "banner-ribbon"
+  | "banner-flag"
+  | "ticket"
+  | "tag"
+  | "speech-bubble"
+  | "thought-bubble";
+
+// Shape element
+export interface CanvasShapeElement extends CanvasElementBase {
+  type: "shape";
+  shapeType: ShapeType;
+  fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+  cornerRadius?: number;
+  opacity?: number;
 }
 
 // Union type for all canvas elements
 export type CanvasElement =
   | CanvasImageElement
   | CanvasStickerElement
-  | CanvasTextElement;
+  | CanvasTextElement
+  | CanvasShapeElement;
 
 // Background configuration
 export interface CanvasBackground {
@@ -237,10 +301,72 @@ export function createTextElement(
     scaleX: 1,
     scaleY: 1,
     zIndex,
+    // Typography
     fontFamily: "Caveat",
     fontSize: 24,
+    fontWeight: "normal",
     fontStyle: "normal",
+    textDecoration: "none",
+    lineHeight: 1.2,
+    // Colors
     fill: "#3D3D3D",
+    // Alignment
     align: "center",
+  };
+}
+
+// Create a shape element
+export function createShapeElement(
+  shapeType: ShapeType,
+  position: { x: number; y: number },
+  zIndex: number,
+  options?: {
+    width?: number;
+    height?: number;
+    fill?: string;
+    stroke?: string;
+    strokeWidth?: number;
+    cornerRadius?: number;
+    opacity?: number;
+  }
+): CanvasShapeElement {
+  // Default sizes based on shape type
+  const defaultSizes: Record<ShapeType, { width: number; height: number }> = {
+    rectangle: { width: 150, height: 100 },
+    oval: { width: 150, height: 100 },
+    pill: { width: 180, height: 60 },
+    heart: { width: 120, height: 110 },
+    star: { width: 120, height: 120 },
+    scalloped: { width: 160, height: 100 },
+    starburst: { width: 140, height: 140 },
+    cloud: { width: 180, height: 120 },
+    arrow: { width: 160, height: 80 },
+    "banner-ribbon": { width: 200, height: 80 },
+    "banner-flag": { width: 140, height: 160 },
+    ticket: { width: 200, height: 100 },
+    tag: { width: 160, height: 80 },
+    "speech-bubble": { width: 180, height: 140 },
+    "thought-bubble": { width: 180, height: 140 },
+  };
+
+  const size = defaultSizes[shapeType];
+
+  return {
+    id: `shape-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    type: "shape",
+    shapeType,
+    x: position.x,
+    y: position.y,
+    width: options?.width ?? size.width,
+    height: options?.height ?? size.height,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    zIndex,
+    fill: options?.fill ?? "#FFE4E1",
+    stroke: options?.stroke,
+    strokeWidth: options?.strokeWidth,
+    cornerRadius: options?.cornerRadius ?? 8,
+    opacity: options?.opacity ?? 1,
   };
 }

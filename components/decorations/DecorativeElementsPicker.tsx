@@ -2,23 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { doodles, Doodle, generateDoodleDataUrl, getDoodlesByType } from "./doodles";
-import { shapes, Shape, generateShapeDataUrl, getShapesByType } from "./shapes";
+import { shapeDefinitions, ShapeDefinition, getShapesByCategory, generateShapePreviewSvg } from "./shapes";
 import { photoCorners, PhotoCorner, generatePhotoCornerDataUrl, getCornersByStyle } from "./photoCorners";
 
 type ElementCategory = "doodles" | "shapes" | "corners";
 
 interface DecorativeElementsPickerProps {
   onSelectDoodle: (doodle: Doodle, dataUrl: string) => void;
-  onSelectShape: (shape: Shape, dataUrl: string) => void;
+  onSelectNativeShape: (shape: ShapeDefinition) => void;
   onSelectCorner: (corner: PhotoCorner, dataUrl: string) => void;
 }
 
 export function DecorativeElementsPicker({
   onSelectDoodle,
-  onSelectShape,
+  onSelectNativeShape,
   onSelectCorner,
 }: DecorativeElementsPickerProps) {
-  const [activeCategory, setActiveCategory] = useState<ElementCategory>("doodles");
+  const [activeCategory, setActiveCategory] = useState<ElementCategory>("shapes");
   const [previews, setPreviews] = useState<Record<string, string>>({});
 
   // Generate previews on mount
@@ -28,8 +28,8 @@ export function DecorativeElementsPicker({
     doodles.forEach((d) => {
       newPreviews[d.id] = generateDoodleDataUrl(d);
     });
-    shapes.forEach((s) => {
-      newPreviews[s.id] = generateShapeDataUrl(s);
+    shapeDefinitions.forEach((s) => {
+      newPreviews[s.id] = `data:image/svg+xml,${encodeURIComponent(generateShapePreviewSvg(s, 64))}`;
     });
     photoCorners.forEach((c) => {
       newPreviews[c.id] = generatePhotoCornerDataUrl(c);
@@ -39,13 +39,13 @@ export function DecorativeElementsPicker({
   }, []);
 
   const categories: { id: ElementCategory; label: string }[] = [
-    { id: "doodles", label: "Doodles" },
     { id: "shapes", label: "Shapes" },
+    { id: "doodles", label: "Doodles" },
     { id: "corners", label: "Corners" },
   ];
 
   const doodleGroups = getDoodlesByType();
-  const shapeGroups = getShapesByType();
+  const shapeGroups = getShapesByCategory();
   const cornerGroups = getCornersByStyle();
 
   return (
@@ -66,6 +66,36 @@ export function DecorativeElementsPicker({
           </button>
         ))}
       </div>
+
+      {/* Shapes (Native) */}
+      {activeCategory === "shapes" && (
+        <div className="space-y-4">
+          <NativeShapeSection
+            title="Basic Shapes"
+            items={shapeGroups.basic}
+            previews={previews}
+            onSelect={onSelectNativeShape}
+          />
+          <NativeShapeSection
+            title="Banners"
+            items={shapeGroups.banners}
+            previews={previews}
+            onSelect={onSelectNativeShape}
+          />
+          <NativeShapeSection
+            title="Labels"
+            items={shapeGroups.labels}
+            previews={previews}
+            onSelect={onSelectNativeShape}
+          />
+          <NativeShapeSection
+            title="Bubbles"
+            items={shapeGroups.bubbles}
+            previews={previews}
+            onSelect={onSelectNativeShape}
+          />
+        </div>
+      )}
 
       {/* Doodles */}
       {activeCategory === "doodles" && (
@@ -97,36 +127,6 @@ export function DecorativeElementsPicker({
         </div>
       )}
 
-      {/* Shapes */}
-      {activeCategory === "shapes" && (
-        <div className="space-y-4">
-          <ShapeSection
-            title="Banners"
-            items={shapeGroups.banners}
-            previews={previews}
-            onSelect={onSelectShape}
-          />
-          <ShapeSection
-            title="Labels & Tickets"
-            items={shapeGroups.tickets}
-            previews={previews}
-            onSelect={onSelectShape}
-          />
-          <ShapeSection
-            title="Speech Bubbles"
-            items={shapeGroups.bubbles}
-            previews={previews}
-            onSelect={onSelectShape}
-          />
-          <ShapeSection
-            title="Frames"
-            items={shapeGroups.frames}
-            previews={previews}
-            onSelect={onSelectShape}
-          />
-        </div>
-      )}
-
       {/* Corners */}
       {activeCategory === "corners" && (
         <div className="space-y-4">
@@ -154,6 +154,44 @@ export function DecorativeElementsPicker({
   );
 }
 
+// Native shape section component
+interface NativeShapeSectionProps {
+  title: string;
+  items: ShapeDefinition[];
+  previews: Record<string, string>;
+  onSelect: (shape: ShapeDefinition) => void;
+}
+
+function NativeShapeSection({ title, items, previews, onSelect }: NativeShapeSectionProps) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {title}
+      </h4>
+      <div className="grid grid-cols-4 gap-2">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onSelect(item)}
+            className="flex items-center justify-center p-2 h-14 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-colors"
+            title={item.label}
+          >
+            {previews[item.id] && (
+              <img
+                src={previews[item.id]}
+                alt={item.label}
+                className="max-w-full max-h-full object-contain"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Doodle section component
 interface DoodleSectionProps {
   title: string;
@@ -176,44 +214,6 @@ function DoodleSection({ title, items, previews, onSelect }: DoodleSectionProps)
             key={item.id}
             onClick={() => onSelect(item, generateDoodleDataUrl(item))}
             className="flex items-center justify-center p-2 h-14 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-colors"
-            title={item.label}
-          >
-            {previews[item.id] && (
-              <img
-                src={previews[item.id]}
-                alt={item.label}
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Shape section component
-interface ShapeSectionProps {
-  title: string;
-  items: Shape[];
-  previews: Record<string, string>;
-  onSelect: (shape: Shape, dataUrl: string) => void;
-}
-
-function ShapeSection({ title, items, previews, onSelect }: ShapeSectionProps) {
-  if (items.length === 0) return null;
-
-  return (
-    <div className="space-y-2">
-      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        {title}
-      </h4>
-      <div className="grid grid-cols-3 gap-2">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onSelect(item, generateShapeDataUrl(item))}
-            className="flex items-center justify-center p-2 h-16 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-colors"
             title={item.label}
           >
             {previews[item.id] && (

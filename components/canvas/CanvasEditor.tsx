@@ -5,6 +5,7 @@ import { Stage, Layer } from "react-konva";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import { CanvasSticker } from "./CanvasSticker";
+import { CanvasShape } from "./CanvasShape";
 import { CanvasText } from "./CanvasText";
 import { CanvasBackground } from "./CanvasBackground";
 import { AlignmentGuides } from "./AlignmentGuides";
@@ -18,12 +19,15 @@ import {
   CanvasImageElement,
   CanvasStickerElement,
   CanvasTextElement,
+  CanvasShapeElement,
   FrameStyle,
   FilterType,
   createStickerElement,
   createTextElement,
   createImageElement,
+  createShapeElement,
 } from "@/lib/canvas/types";
+import type { ShapeDefinition } from "@/components/decorations/shapes";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -301,7 +305,7 @@ export function CanvasEditor({
 
   // Wrapper for element onChange that handles multi-select
   const handleElementChange = useCallback(
-    (id: string, updates: Partial<CanvasImageElement | CanvasStickerElement | CanvasTextElement>) => {
+    (id: string, updates: Partial<CanvasImageElement | CanvasStickerElement | CanvasTextElement | CanvasShapeElement>) => {
       const keys = Object.keys(updates);
       const isPositionOnlyUpdate = keys.every(k => k === 'x' || k === 'y');
       const isTransformUpdate = keys.some(k => k === 'width' || k === 'height' || k === 'rotation');
@@ -380,6 +384,20 @@ export function CanvasEditor({
         maxZIndex + 1
       );
       addElement(stickerElement);
+    },
+    [addElement, canvasData.width, canvasData.height, maxZIndex]
+  );
+
+  // Handle adding a native shape
+  const handleAddNativeShape = useCallback(
+    (shape: ShapeDefinition) => {
+      const shapeElement = createShapeElement(
+        shape.id,
+        { x: canvasData.width / 2 - 75, y: canvasData.height / 2 - 50 },
+        maxZIndex + 1,
+        { fill: shape.defaultFill }
+      );
+      addElement(shapeElement);
     },
     [addElement, canvasData.width, canvasData.height, maxZIndex]
   );
@@ -495,6 +513,12 @@ export function CanvasEditor({
   const allImagesSelected = selectedType === "image";
   const selectedImageElements = allImagesSelected
     ? (selectedElements as CanvasImageElement[])
+    : [];
+
+  // For options bar - show when all selected are text
+  const allTextSelected = selectedType === "text";
+  const selectedTextElements = allTextSelected
+    ? (selectedElements as CanvasTextElement[])
     : [];
 
   // Toolbar buttons configuration
@@ -674,6 +698,27 @@ export function CanvasEditor({
                       />
                     );
                   }
+                  if (element.type === "shape") {
+                    return (
+                      <CanvasShape
+                        key={element.id}
+                        element={transformedElement as CanvasShapeElement}
+                        isSelected={selectedIds.includes(element.id)}
+                        onSelect={(e) => handleElementSelect(element.id, e)}
+                        onChange={(updates) => handleElementChange(element.id, updates)}
+                        onDragStart={() => {
+                          handleMultiDragStart(element.id);
+                          onGuideDragStart(element.id);
+                        }}
+                        onDragMove={(newX, newY) => {
+                          handleMultiDragMove(element.id, newX, newY);
+                          return onGuideDragMove(element, newX, newY);
+                        }}
+                        onDragEnd={onGuideDragEnd}
+                        onTransform={(scaleX, scaleY) => handleMultiTransform(element.id, scaleX, scaleY)}
+                      />
+                    );
+                  }
                   return null;
                 })}
 
@@ -696,6 +741,7 @@ export function CanvasEditor({
               type={openPopover}
               onClose={() => setOpenPopover(null)}
               onAddSticker={handleAddSticker}
+              onAddNativeShape={handleAddNativeShape}
               onChangeBackground={setBackground}
               onAddText={handleAddText}
               onAddPhotos={handleAddPhotos}
@@ -726,6 +772,64 @@ export function CanvasEditor({
                 }}
                 onFilterIntensityChange={(intensity: number) => {
                   updateElements(selectedIds, { filterIntensity: intensity });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Text Options Panel */}
+          {allTextSelected && selectedTextElements.length > 0 && (
+            <div className="absolute top-0 left-full ml-3 hidden sm:block">
+              <ElementOptionsPanel
+                type="text"
+                selectedCount={selectedTextElements.length}
+                currentFontFamily={selectedTextElements[0].fontFamily}
+                currentFontSize={selectedTextElements[0].fontSize}
+                currentFontWeight={selectedTextElements[0].fontWeight || "normal"}
+                currentFontStyle={selectedTextElements[0].fontStyle || "normal"}
+                currentTextDecoration={selectedTextElements[0].textDecoration || "none"}
+                currentFill={selectedTextElements[0].fill}
+                currentBackgroundColor={selectedTextElements[0].backgroundColor}
+                currentAlign={selectedTextElements[0].align}
+                currentVerticalAlign={selectedTextElements[0].verticalAlign || "top"}
+                currentBackgroundPadding={selectedTextElements[0].backgroundPadding || 0}
+                currentBackgroundCornerRadius={selectedTextElements[0].backgroundCornerRadius || 0}
+                currentContainerShape={selectedTextElements[0].containerShape || "rectangle"}
+                onFontFamilyChange={(family: string) => {
+                  updateElements(selectedIds, { fontFamily: family });
+                }}
+                onFontSizeChange={(size: number) => {
+                  updateElements(selectedIds, { fontSize: size });
+                }}
+                onFontWeightChange={(weight: "normal" | "bold") => {
+                  updateElements(selectedIds, { fontWeight: weight });
+                }}
+                onFontStyleChange={(style: "normal" | "italic") => {
+                  updateElements(selectedIds, { fontStyle: style });
+                }}
+                onTextDecorationChange={(decoration: "none" | "underline") => {
+                  updateElements(selectedIds, { textDecoration: decoration });
+                }}
+                onFillChange={(color: string) => {
+                  updateElements(selectedIds, { fill: color });
+                }}
+                onBackgroundColorChange={(color: string) => {
+                  updateElements(selectedIds, { backgroundColor: color || undefined });
+                }}
+                onAlignChange={(align: "left" | "center" | "right") => {
+                  updateElements(selectedIds, { align: align });
+                }}
+                onVerticalAlignChange={(align: "top" | "middle" | "bottom") => {
+                  updateElements(selectedIds, { verticalAlign: align });
+                }}
+                onBackgroundPaddingChange={(padding: number) => {
+                  updateElements(selectedIds, { backgroundPadding: padding });
+                }}
+                onBackgroundCornerRadiusChange={(radius: number) => {
+                  updateElements(selectedIds, { backgroundCornerRadius: radius });
+                }}
+                onContainerShapeChange={(shape) => {
+                  updateElements(selectedIds, { containerShape: shape });
                 }}
               />
             </div>

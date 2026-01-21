@@ -10,7 +10,7 @@ import { DecorativeElementsPicker } from "@/components/decorations/DecorativeEle
 import { Sticker } from "@/components/decorations/stickers";
 import { WashiTape } from "@/components/decorations/washiTapes";
 import { Doodle } from "@/components/decorations/doodles";
-import { Shape } from "@/components/decorations/shapes";
+import { ShapeDefinition } from "@/components/decorations/shapes";
 import { PhotoCorner } from "@/components/decorations/photoCorners";
 import { CanvasBackground, MediaItem } from "@/lib/canvas/types";
 
@@ -20,6 +20,7 @@ interface CanvasToolbarPopoverProps {
   type: PopoverType;
   onClose: () => void;
   onAddSticker: (sticker: Sticker, src: string) => void;
+  onAddNativeShape: (shape: ShapeDefinition) => void;
   onChangeBackground: (background: CanvasBackground) => void;
   onAddText: () => void;
   onAddPhotos: (media: MediaItem[]) => void;
@@ -32,6 +33,7 @@ export function CanvasToolbarPopover({
   type,
   onClose,
   onAddSticker,
+  onAddNativeShape,
   onChangeBackground,
   onAddText,
   onAddPhotos,
@@ -93,14 +95,8 @@ export function CanvasToolbarPopover({
     onClose();
   };
 
-  const handleAddShape = (shape: Shape, dataUrl: string) => {
-    const stickerLike: Sticker = {
-      id: shape.id,
-      emoji: shape.label,
-      label: shape.label,
-      category: "shape",
-    };
-    onAddSticker(stickerLike, dataUrl);
+  const handleAddNativeShape = (shape: ShapeDefinition) => {
+    onAddNativeShape(shape);
     onClose();
   };
 
@@ -175,7 +171,7 @@ export function CanvasToolbarPopover({
         {type === "decor" && (
           <DecorativeElementsPicker
             onSelectDoodle={handleAddDoodle}
-            onSelectShape={handleAddShape}
+            onSelectNativeShape={handleAddNativeShape}
             onSelectCorner={handleAddCorner}
           />
         )}

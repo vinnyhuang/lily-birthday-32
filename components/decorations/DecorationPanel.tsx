@@ -10,7 +10,7 @@ import { DecorativeElementsPicker } from "./DecorativeElementsPicker";
 import { Sticker } from "./stickers";
 import { WashiTape } from "./washiTapes";
 import { Doodle } from "./doodles";
-import { Shape } from "./shapes";
+import { ShapeDefinition } from "./shapes";
 import { PhotoCorner } from "./photoCorners";
 import { CanvasBackground, MediaItem } from "@/lib/canvas/types";
 
@@ -18,6 +18,7 @@ export type TabType = "photos" | "stickers" | "washi" | "decor" | "text" | "back
 
 interface DecorationPanelProps {
   onAddSticker: (sticker: Sticker, src: string) => void;
+  onAddNativeShape: (shape: ShapeDefinition) => void;
   onChangeBackground: (background: CanvasBackground) => void;
   onAddText: () => void;
   onAddPhotos: (media: MediaItem[]) => void;
@@ -32,6 +33,7 @@ interface DecorationPanelProps {
 
 export function DecorationPanel({
   onAddSticker,
+  onAddNativeShape,
   onChangeBackground,
   onAddText,
   onAddPhotos,
@@ -81,14 +83,8 @@ export function DecorationPanel({
     onOpenChange(false);
   };
 
-  const handleAddShape = (shape: Shape, dataUrl: string) => {
-    const stickerLike: Sticker = {
-      id: shape.id,
-      emoji: shape.label,
-      label: shape.label,
-      category: "shape",
-    };
-    onAddSticker(stickerLike, dataUrl);
+  const handleAddNativeShape = (shape: ShapeDefinition) => {
+    onAddNativeShape(shape);
     onOpenChange(false);
   };
 
@@ -172,7 +168,7 @@ export function DecorationPanel({
               {activeTab === "decor" && (
                 <DecorativeElementsPicker
                   onSelectDoodle={handleAddDoodle}
-                  onSelectShape={handleAddShape}
+                  onSelectNativeShape={handleAddNativeShape}
                   onSelectCorner={handleAddCorner}
                 />
               )}
