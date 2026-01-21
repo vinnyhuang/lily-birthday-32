@@ -679,8 +679,12 @@ export function CanvasEditor({
                 type="image"
                 selectedCount={selectedImageElements.length}
                 currentFrame={selectedImageElements[0].frameStyle || "none"}
+                currentBorderColor={selectedImageElements[0].borderColor || "#FFFFFF"}
                 onFrameSelect={(frame: FrameStyle) => {
                   updateElements(selectedIds, { frameStyle: frame });
+                }}
+                onBorderColorSelect={(color: string) => {
+                  updateElements(selectedIds, { borderColor: color });
                 }}
               />
             </div>

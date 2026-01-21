@@ -5,7 +5,7 @@ import { Image, Transformer, Group, Rect, Line } from "react-konva";
 import useImage from "use-image";
 import Konva from "konva";
 import { CanvasImageElement, SnapResult, FrameStyle } from "@/lib/canvas/types";
-import { generateTapeDataUrl } from "@/lib/canvas/frames";
+import { generateTapeDataUrl, generateFloralOverlayUrl, generateCelebrationOverlayUrl } from "@/lib/canvas/frames";
 
 interface CanvasImageProps {
   element: CanvasImageElement;
@@ -32,24 +32,48 @@ export function CanvasImage({
   const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
 
-  // Load tape images for "taped" frame style
+  // Load tape images for "taped" frame style (4 corners, different colors)
   const tapeUrl1 = useMemo(
-    () => generateTapeDataUrl(50, 12, "#F5B8C4", 1),
+    () => generateTapeDataUrl(50, 12, "#F5B8C4", 1), // Pink - top-left
     []
   );
   const tapeUrl2 = useMemo(
-    () => generateTapeDataUrl(50, 12, "#9DC88D", 2),
+    () => generateTapeDataUrl(50, 12, "#9DC88D", 2), // Green - top-right
+    []
+  );
+  const tapeUrl3 = useMemo(
+    () => generateTapeDataUrl(50, 12, "#A8D4E6", 3), // Blue - bottom-left
+    []
+  );
+  const tapeUrl4 = useMemo(
+    () => generateTapeDataUrl(50, 12, "#F5D89A", 4), // Yellow - bottom-right
     []
   );
   const [tapeImage1] = useImage(tapeUrl1);
   const [tapeImage2] = useImage(tapeUrl2);
+  const [tapeImage3] = useImage(tapeUrl3);
+  const [tapeImage4] = useImage(tapeUrl4);
+
+  // Load floral overlay for "floral" frame style
+  const floralOverlayUrl = useMemo(
+    () => generateFloralOverlayUrl(element.width + 30, element.height + 30),
+    [element.width, element.height]
+  );
+  const [floralOverlay] = useImage(floralOverlayUrl);
+
+  // Load celebration overlay for "celebration" frame style
+  const celebrationOverlayUrl = useMemo(
+    () => generateCelebrationOverlayUrl(element.width + 30, element.height + 30, element.id.charCodeAt(0)),
+    [element.width, element.height, element.id]
+  );
+  const [celebrationOverlay] = useImage(celebrationOverlayUrl);
 
   useEffect(() => {
     if (isSelected && transformerRef.current && groupRef.current) {
       transformerRef.current.nodes([groupRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, element.width, element.height, element.rotation]);
+  }, [isSelected, element.width, element.height, element.rotation, element.frameStyle]);
 
   const handleDragStart = () => {
     onDragStart?.();
@@ -106,12 +130,22 @@ export function CanvasImage({
           cornerRadius: 2,
         };
       case "rounded":
+      case "simple-border":
         return {
           frameWidth: width + 16,
           frameHeight: height + 16,
           imageX: 8,
           imageY: 8,
-          cornerRadius: 16,
+          cornerRadius: frameStyle === "rounded" ? 16 : 0,
+        };
+      case "floral":
+      case "celebration":
+        return {
+          frameWidth: width + 30,
+          frameHeight: height + 30,
+          imageX: 15,
+          imageY: 15,
+          cornerRadius: 4,
         };
       default:
         return {
@@ -178,8 +212,109 @@ export function CanvasImage({
     ctx.closePath();
   } : undefined;
 
-  const needsFrame = frameStyle === "polaroid" || frameStyle === "rounded";
+  // Clip function for heart frame - fills the entire frame
+  const heartClipFunc = frameStyle === "heart" ? (ctx: Konva.Context) => {
+    const w = element.width;
+    const h = element.height;
+    // Scale to fill the frame (heart is ~100 units wide, ~85 units tall in normalized coords)
+    const scaleX = w / 100;
+    const scaleY = h / 85;
+
+    ctx.beginPath();
+    ctx.moveTo(50 * scaleX, 85 * scaleY);
+    // Left curve
+    ctx.bezierCurveTo(
+      50 * scaleX, 85 * scaleY,
+      0 * scaleX, 55 * scaleY,
+      0 * scaleX, 32 * scaleY
+    );
+    ctx.bezierCurveTo(
+      0 * scaleX, 8 * scaleY,
+      25 * scaleX, 0 * scaleY,
+      50 * scaleX, 18 * scaleY
+    );
+    // Right curve
+    ctx.bezierCurveTo(
+      75 * scaleX, 0 * scaleY,
+      100 * scaleX, 8 * scaleY,
+      100 * scaleX, 32 * scaleY
+    );
+    ctx.bezierCurveTo(
+      100 * scaleX, 55 * scaleY,
+      50 * scaleX, 85 * scaleY,
+      50 * scaleX, 85 * scaleY
+    );
+    ctx.closePath();
+  } : undefined;
+
+  // Clip function for scalloped edge frame - scallops curve outward, inset by radius
+  const scallopedClipFunc = frameStyle === "scalloped" ? (ctx: Konva.Context) => {
+    const w = element.width;
+    const h = element.height;
+    const scallopSize = 12;
+    const r = scallopSize / 2; // radius / inset amount
+    const halfScallop = scallopSize / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(r, r); // Start at inset corner
+
+    // Top edge scallops - start with half scallop, full scallops in middle, end with half
+    // First half scallop
+    ctx.lineTo(r, r);
+    ctx.quadraticCurveTo(r + halfScallop / 2, 0, r + halfScallop, r);
+
+    // Full scallops in the middle
+    for (let x = r + halfScallop; x < w - r - halfScallop; x += scallopSize) {
+      const midX = x + r;
+      ctx.lineTo(x, r);
+      ctx.quadraticCurveTo(midX, 0, x + scallopSize, r);
+    }
+
+    // Last half scallop
+    ctx.lineTo(w - r - halfScallop, r);
+    ctx.quadraticCurveTo(w - r - halfScallop / 2, 0, w - r, r);
+
+    // Right edge scallops - base at x=w-r, peaks at x=w
+    for (let y = r; y < h - r; y += scallopSize) {
+      const midY = y + r;
+      ctx.lineTo(w - r, y);
+      ctx.quadraticCurveTo(w, midY, w - r, Math.min(y + scallopSize, h - r));
+    }
+    ctx.lineTo(w - r, h - r);
+
+    // Bottom edge scallops - start with half scallop, full scallops in middle, end with half
+    // First half scallop (from right)
+    ctx.lineTo(w - r, h - r);
+    ctx.quadraticCurveTo(w - r - halfScallop / 2, h, w - r - halfScallop, h - r);
+
+    // Full scallops in the middle
+    for (let x = w - r - halfScallop; x > r + halfScallop; x -= scallopSize) {
+      const midX = x - r;
+      ctx.lineTo(x, h - r);
+      ctx.quadraticCurveTo(midX, h, x - scallopSize, h - r);
+    }
+
+    // Last half scallop
+    ctx.lineTo(r + halfScallop, h - r);
+    ctx.quadraticCurveTo(r + halfScallop / 2, h, r, h - r);
+
+    // Left edge scallops - base at x=r, peaks at x=0
+    for (let y = h - r; y > r; y -= scallopSize) {
+      const midY = y - r;
+      ctx.lineTo(r, y);
+      ctx.quadraticCurveTo(0, midY, r, Math.max(y - scallopSize, r));
+    }
+    ctx.lineTo(r, r);
+
+    ctx.closePath();
+  } : undefined;
+
+  const needsFrame = frameStyle === "polaroid" || frameStyle === "rounded" || frameStyle === "simple-border";
   const hasTape = frameStyle === "taped";
+  const hasFloral = frameStyle === "floral";
+  const hasCelebration = frameStyle === "celebration";
+  const hasClipMask = circleClipFunc || tornClipFunc || heartClipFunc || scallopedClipFunc;
+  const clipFunc = circleClipFunc || tornClipFunc || heartClipFunc || scallopedClipFunc;
 
   return (
     <>
@@ -196,15 +331,15 @@ export function CanvasImage({
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       >
-        {/* Frame background for polaroid/rounded */}
+        {/* Frame background for polaroid/rounded/simple-border */}
         {needsFrame && (
           <Rect
             x={0}
             y={0}
             width={dims.frameWidth}
             height={dims.frameHeight}
-            fill="#FFFFFF"
-            cornerRadius={frameStyle === "polaroid" ? 2 : 12}
+            fill={frameStyle === "polaroid" ? "#FFFFFF" : (element.borderColor || "#FFFFFF")}
+            cornerRadius={frameStyle === "polaroid" ? 2 : (frameStyle === "rounded" ? 12 : 0)}
             shadowColor="rgba(0,0,0,0.15)"
             shadowBlur={isSelected ? 15 : 10}
             shadowOffset={{ x: 2, y: 3 }}
@@ -212,42 +347,107 @@ export function CanvasImage({
           />
         )}
 
-        {/* Main image */}
-        <Image
-          image={image}
-          x={dims.imageX}
-          y={dims.imageY}
-          width={element.width}
-          height={element.height}
-          cornerRadius={circleClipFunc || tornClipFunc ? 0 : dims.cornerRadius}
-          clipFunc={circleClipFunc || tornClipFunc}
-          shadowColor={needsFrame ? undefined : "rgba(0,0,0,0.2)"}
-          shadowBlur={needsFrame ? undefined : (isSelected ? 15 : 8)}
-          shadowOffset={needsFrame ? undefined : { x: 2, y: 2 }}
-          shadowOpacity={needsFrame ? undefined : 0.5}
-        />
+        {/* No background for floral/celebration frames - transparent */}
 
-        {/* Washi tape for taped frame */}
-        {hasTape && tapeImage1 && tapeImage2 && (
+        {/* Main image - wrap in Group for clipping (circle/torn/heart/scalloped frames) */}
+        {hasClipMask ? (
+          <Group
+            x={dims.imageX}
+            y={dims.imageY}
+            clipFunc={clipFunc}
+          >
+            <Image
+              image={image}
+              x={0}
+              y={0}
+              width={element.width}
+              height={element.height}
+              shadowColor="rgba(0,0,0,0.2)"
+              shadowBlur={isSelected ? 15 : 8}
+              shadowOffset={{ x: 2, y: 2 }}
+              shadowOpacity={0.5}
+            />
+          </Group>
+        ) : (
+          <Image
+            image={image}
+            x={dims.imageX}
+            y={dims.imageY}
+            width={element.width}
+            height={element.height}
+            cornerRadius={dims.cornerRadius}
+            shadowColor={needsFrame ? undefined : "rgba(0,0,0,0.2)"}
+            shadowBlur={needsFrame ? undefined : (isSelected ? 15 : 8)}
+            shadowOffset={needsFrame ? undefined : { x: 2, y: 2 }}
+            shadowOpacity={needsFrame ? undefined : 0.5}
+          />
+        )}
+
+        {/* Floral overlay */}
+        {hasFloral && floralOverlay && (
+          <Image
+            image={floralOverlay}
+            x={0}
+            y={0}
+            width={dims.frameWidth}
+            height={dims.frameHeight}
+            listening={false}
+          />
+        )}
+
+        {/* Celebration overlay */}
+        {hasCelebration && celebrationOverlay && (
+          <Image
+            image={celebrationOverlay}
+            x={0}
+            y={0}
+            width={dims.frameWidth}
+            height={dims.frameHeight}
+            listening={false}
+          />
+        )}
+
+        {/* Washi tape for taped frame - 4 corners */}
+        {hasTape && tapeImage1 && tapeImage2 && tapeImage3 && tapeImage4 && (
           <>
             {/* Top-left tape */}
             <Image
               image={tapeImage1}
-              x={-15}
-              y={-8}
+              x={-16}
+              y={20}
               width={50}
               height={12}
-              rotation={-35}
+              rotation={-45}
+              opacity={0.9}
+            />
+            {/* Top-right tape */}
+            <Image
+              image={tapeImage2}
+              x={element.width - 22}
+              y={-12}
+              width={50}
+              height={12}
+              rotation={45}
+              opacity={0.9}
+            />
+            {/* Bottom-left tape */}
+            <Image
+              image={tapeImage3}
+              x={-10}
+              y={element.height - 30}
+              width={50}
+              height={12}
+              rotation={45}
               opacity={0.9}
             />
             {/* Bottom-right tape */}
             <Image
-              image={tapeImage2}
-              x={element.width - 35}
-              y={element.height - 4}
+              image={tapeImage4}
+              x={element.width - 30}
+              y={element.height + 4}
               width={50}
               height={12}
-              rotation={-35}
+              rotation={-45}
               opacity={0.9}
             />
           </>

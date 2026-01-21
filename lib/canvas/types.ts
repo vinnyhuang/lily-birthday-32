@@ -14,7 +14,18 @@ export interface CanvasElementBase {
 }
 
 // Frame styles for photos
-export type FrameStyle = "none" | "polaroid" | "torn" | "taped" | "circle" | "rounded";
+export type FrameStyle =
+  | "none"
+  | "polaroid"
+  | "torn"
+  | "taped"
+  | "circle"
+  | "rounded"
+  | "simple-border"
+  | "scalloped"
+  | "heart"
+  | "floral"
+  | "celebration";
 
 // Alignment guide for snapping
 export interface AlignmentGuide {
@@ -37,6 +48,7 @@ export interface CanvasImageElement extends CanvasElementBase {
   mediaId: string;
   src: string;
   frameStyle?: FrameStyle;
+  borderColor?: string; // For simple-border and rounded frames
 }
 
 // Sticker category types
