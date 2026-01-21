@@ -27,6 +27,17 @@ export type FrameStyle =
   | "floral"
   | "celebration";
 
+// Filter types for photos
+export type FilterType =
+  | "none"
+  | "grayscale"
+  | "sepia"
+  | "warm"
+  | "cool"
+  | "faded"
+  | "contrast"
+  | "soft";
+
 // Alignment guide for snapping
 export interface AlignmentGuide {
   type: "vertical" | "horizontal";
@@ -50,6 +61,8 @@ export interface CanvasImageElement extends CanvasElementBase {
   src: string; // Kept for backwards compatibility, but s3Key is preferred
   frameStyle?: FrameStyle;
   borderColor?: string; // For simple-border and rounded frames
+  filterType?: FilterType; // Photo filter effect
+  filterIntensity?: number; // Filter intensity 0-100 (default 100)
 }
 
 // Sticker category types

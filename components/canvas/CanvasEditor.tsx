@@ -19,6 +19,7 @@ import {
   CanvasStickerElement,
   CanvasTextElement,
   FrameStyle,
+  FilterType,
   createStickerElement,
   createTextElement,
   createImageElement,
@@ -712,11 +713,19 @@ export function CanvasEditor({
                 selectedCount={selectedImageElements.length}
                 currentFrame={selectedImageElements[0].frameStyle || "none"}
                 currentBorderColor={selectedImageElements[0].borderColor || "#FFFFFF"}
+                currentFilter={selectedImageElements[0].filterType || "none"}
+                currentFilterIntensity={selectedImageElements[0].filterIntensity ?? 100}
                 onFrameSelect={(frame: FrameStyle) => {
                   updateElements(selectedIds, { frameStyle: frame });
                 }}
                 onBorderColorSelect={(color: string) => {
                   updateElements(selectedIds, { borderColor: color });
+                }}
+                onFilterSelect={(filter: FilterType) => {
+                  updateElements(selectedIds, { filterType: filter });
+                }}
+                onFilterIntensityChange={(intensity: number) => {
+                  updateElements(selectedIds, { filterIntensity: intensity });
                 }}
               />
             </div>

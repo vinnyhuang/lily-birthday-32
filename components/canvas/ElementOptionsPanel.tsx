@@ -1,7 +1,9 @@
 "use client";
 
-import { FrameStyle } from "@/lib/canvas/types";
+import { useState } from "react";
+import { FrameStyle, FilterType } from "@/lib/canvas/types";
 import { frames, borderColorOptions } from "@/lib/canvas/frames";
+import { filters } from "@/lib/canvas/filters";
 
 interface ElementOptionsPanelProps {
   type: "image" | "sticker" | "text";
@@ -9,71 +11,156 @@ interface ElementOptionsPanelProps {
   // Image-specific props
   currentFrame?: FrameStyle;
   currentBorderColor?: string;
+  currentFilter?: FilterType;
+  currentFilterIntensity?: number;
   onFrameSelect?: (frame: FrameStyle) => void;
   onBorderColorSelect?: (color: string) => void;
+  onFilterSelect?: (filter: FilterType) => void;
+  onFilterIntensityChange?: (intensity: number) => void;
 }
+
+type TabType = "frames" | "filters";
 
 export function ElementOptionsPanel({
   type,
   selectedCount,
   currentFrame,
   currentBorderColor,
+  currentFilter = "none",
+  currentFilterIntensity = 100,
   onFrameSelect,
   onBorderColorSelect,
+  onFilterSelect,
+  onFilterIntensityChange,
 }: ElementOptionsPanelProps) {
+  const [activeTab, setActiveTab] = useState<TabType>("frames");
   const showColorPicker = currentFrame === "simple-border" || currentFrame === "rounded";
 
   if (type === "image") {
     return (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden w-[220px]">
-        {/* Header */}
-        <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-          <span className="text-sm font-medium text-gray-700">
-            Photo Options{selectedCount > 1 ? ` (${selectedCount})` : ""}
-          </span>
-        </div>
-
-        {/* Frame Style Section */}
-        <div className="p-3">
-          <div className="text-xs font-medium text-gray-500 mb-2">Frame Style</div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {frames.map((frame) => (
-              <button
-                key={frame.id}
-                onClick={() => onFrameSelect?.(frame.id)}
-                className={`flex flex-col items-center gap-1 p-1.5 rounded-lg border transition-all ${
-                  currentFrame === frame.id
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600"
-                }`}
-                title={frame.description}
-              >
-                <FramePreview frameId={frame.id} isSelected={currentFrame === frame.id} />
-                <span className="text-[10px] leading-tight text-center">{frame.name}</span>
-              </button>
-            ))}
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden w-[240px]">
+        {/* Header with tabs */}
+        <div className="border-b border-gray-100">
+          <div className="px-3 py-2 bg-gray-50">
+            <span className="text-sm font-medium text-gray-700">
+              Photo Options{selectedCount > 1 ? ` (${selectedCount})` : ""}
+            </span>
+          </div>
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab("frames")}
+              className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                activeTab === "frames"
+                  ? "text-primary border-b-2 border-primary bg-primary/5"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Frames
+            </button>
+            <button
+              onClick={() => setActiveTab("filters")}
+              className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                activeTab === "filters"
+                  ? "text-primary border-b-2 border-primary bg-primary/5"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Filters
+            </button>
           </div>
         </div>
 
-        {/* Border Color Section - only for simple-border and rounded */}
-        {showColorPicker && (
-          <div className="px-3 pb-3">
-            <div className="text-xs font-medium text-gray-500 mb-2">Border Color</div>
-            <div className="grid grid-cols-4 gap-1.5">
-              {borderColorOptions.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => onBorderColorSelect?.(color.value)}
-                  className={`w-full aspect-square rounded-lg border-2 transition-all ${
-                    currentBorderColor === color.value
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  style={{ backgroundColor: color.value }}
-                  title={color.label}
-                />
-              ))}
+        {/* Frames Tab */}
+        {activeTab === "frames" && (
+          <>
+            {/* Frame Style Section */}
+            <div className="p-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">Frame Style</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {frames.map((frame) => (
+                  <button
+                    key={frame.id}
+                    onClick={() => onFrameSelect?.(frame.id)}
+                    className={`flex flex-col items-center gap-1 p-1.5 rounded-lg border transition-all ${
+                      currentFrame === frame.id
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600"
+                    }`}
+                    title={frame.description}
+                  >
+                    <FramePreview frameId={frame.id} isSelected={currentFrame === frame.id} />
+                    <span className="text-[10px] leading-tight text-center">{frame.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Border Color Section - only for simple-border and rounded */}
+            {showColorPicker && (
+              <div className="px-3 pb-3">
+                <div className="text-xs font-medium text-gray-500 mb-2">Border Color</div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {borderColorOptions.map((color) => (
+                    <button
+                      key={color.id}
+                      onClick={() => onBorderColorSelect?.(color.value)}
+                      className={`w-full aspect-square rounded-lg border-2 transition-all ${
+                        currentBorderColor === color.value
+                          ? "border-primary ring-2 ring-primary/30"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      style={{ backgroundColor: color.value }}
+                      title={color.label}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Filters Tab */}
+        {activeTab === "filters" && (
+          <div className="p-3 space-y-3">
+            {/* Filter Type Selection */}
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-2">Filter</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {filters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => onFilterSelect?.(filter.id)}
+                    className={`flex flex-col items-center gap-1 p-1.5 rounded-lg border transition-all ${
+                      currentFilter === filter.id
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600"
+                    }`}
+                    title={filter.description}
+                  >
+                    <FilterPreview filterId={filter.id} isSelected={currentFilter === filter.id} />
+                    <span className="text-[9px] leading-tight text-center">{filter.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Intensity Slider - only show when a filter is selected */}
+            {currentFilter !== "none" && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-gray-500">Intensity</span>
+                  <span className="text-xs text-gray-400">{currentFilterIntensity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={currentFilterIntensity}
+                  onChange={(e) => onFilterIntensityChange?.(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -189,6 +276,90 @@ function FramePreview({ frameId, isSelected }: { frameId: FrameStyle; isSelected
           <rect x="2" y="20" width="4" height="1.5" rx="0.5" fill={isSelected ? "#FF6B6B" : "#D1D5DB"} transform="rotate(-15 4 20)" />
           <rect x="18" y="21" width="4" height="1.5" rx="0.5" fill={isSelected ? "#4ECDC4" : "#D1D5DB"} transform="rotate(15 20 21)" />
         </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function FilterPreview({ filterId, isSelected }: { filterId: FilterType; isSelected: boolean }) {
+  const size = 28;
+  const bgColor = isSelected ? "rgba(249,112,102,0.15)" : "#F3F4F6";
+  const borderColor = isSelected ? "currentColor" : "#D1D5DB";
+
+  // Different visual representations for each filter
+  switch (filterId) {
+    case "none":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-blue-300 via-green-200 to-yellow-200" />
+        </div>
+      );
+    case "grayscale":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-gray-700 via-gray-400 to-gray-200" />
+        </div>
+      );
+    case "sepia":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-amber-700 via-amber-500 to-amber-200" />
+        </div>
+      );
+    case "warm":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-orange-400 via-yellow-300 to-orange-200" />
+        </div>
+      );
+    case "cool":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-blue-600 via-blue-400 to-blue-200" />
+        </div>
+      );
+    case "faded":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-gray-400 via-slate-300 to-gray-200 opacity-70" />
+        </div>
+      );
+    case "contrast":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-black via-gray-500 to-white" />
+        </div>
+      );
+    case "soft":
+      return (
+        <div
+          className="rounded overflow-hidden"
+          style={{ width: size, height: size, backgroundColor: bgColor, border: `1px solid ${borderColor}` }}
+        >
+          <div className="w-full h-full bg-gradient-to-br from-pink-200 via-purple-100 to-blue-100 opacity-80" />
+        </div>
       );
     default:
       return null;

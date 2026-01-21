@@ -1,12 +1,102 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
-import { Image, Transformer, Group, Rect, Line } from "react-konva";
+import { Image, Transformer, Group, Rect } from "react-konva";
 import useImage from "use-image";
 import Konva from "konva";
-import { CanvasImageElement, SnapResult, FrameStyle } from "@/lib/canvas/types";
+import { CanvasImageElement, SnapResult, FilterType } from "@/lib/canvas/types";
 import { generateTapeDataUrl, generateFloralOverlayUrl, generateCelebrationOverlayUrl } from "@/lib/canvas/frames";
 import { getProxyUrl } from "@/lib/s3";
+
+// Get Konva filters configuration based on filter type and intensity
+function getKonvaFilters(filterType: FilterType, intensity: number): {
+  filters: Array<typeof Konva.Filters.Brighten>;
+  config: Record<string, number>;
+} | null {
+  if (!filterType || filterType === "none") {
+    return null;
+  }
+
+  const t = intensity / 100; // 0 to 1
+
+  // Konva filter scales:
+  // - Contrast: -100 to 100
+  // - Brighten: -1 to 1
+  // - HSL hue: -180 to 180 degrees
+  // - HSL saturation: -2 to 10
+  // - HSL luminance: -2 to 2
+  // - Blur: blurRadius in pixels
+
+  switch (filterType) {
+    case "grayscale":
+      return {
+        filters: [Konva.Filters.Grayscale, Konva.Filters.Contrast],
+        config: {
+          contrast: 10 * t, // 10% contrast boost (scale: -100 to 100)
+        },
+      };
+    case "sepia":
+      return {
+        filters: [Konva.Filters.Sepia, Konva.Filters.Brighten],
+        config: {
+          sepia: t,
+          brightness: 0.05 * t, // 5% brighter (scale: -1 to 1)
+        },
+      };
+    case "warm":
+      return {
+        filters: [Konva.Filters.HSL, Konva.Filters.Brighten],
+        config: {
+          hue: 0, // No hue shift
+          saturation: 0.3 * t, // Boost saturation (scale: -2 to 10)
+          luminance: 0.05 * t, // Slight brightness boost (scale: -2 to 2)
+          brightness: 0.02 * t,
+        },
+      };
+    case "cool":
+      return {
+        filters: [Konva.Filters.HSL, Konva.Filters.Contrast],
+        config: {
+          hue: -10 * t, // Slight blue shift (scale: -180 to 180 degrees)
+          saturation: -0.1 * t, // Reduce saturation
+          luminance: -0.05 * t, // Slightly darker
+          contrast: 10 * t, // 10% contrast boost (scale: -100 to 100)
+        },
+      };
+    case "faded":
+      return {
+        filters: [Konva.Filters.Contrast, Konva.Filters.HSL, Konva.Filters.Brighten],
+        config: {
+          contrast: -10 * t, // Reduce contrast (scale: -100 to 100)
+          saturation: -0.2 * t, // Reduce saturation
+          luminance: 0,
+          hue: 0,
+          brightness: 0.1 * t, // 10% brighter
+        },
+      };
+    case "contrast":
+      return {
+        filters: [Konva.Filters.Contrast, Konva.Filters.HSL],
+        config: {
+          contrast: 40 * t, // Strong 40% contrast boost (scale: -100 to 100)
+          saturation: 0.1 * t, // Slight saturation boost
+          hue: 0,
+          luminance: 0,
+        },
+      };
+    case "soft":
+      return {
+        filters: [Konva.Filters.Blur, Konva.Filters.Brighten, Konva.Filters.Contrast],
+        config: {
+          blurRadius: 0.5 * t, // 0.5px blur
+          brightness: 0.08 * t, // 8% brighter
+          contrast: -5 * t, // 5% contrast reduction (scale: -100 to 100)
+        },
+      };
+    default:
+      return null;
+  }
+}
 
 interface CanvasImageProps {
   element: CanvasImageElement;
@@ -34,6 +124,34 @@ export function CanvasImage({
   const [image] = useImage(imageUrl, "anonymous");
   const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  const imageRef = useRef<Konva.Image>(null);
+
+  // Get filter configuration
+  const filterConfig = useMemo(() => {
+    return getKonvaFilters(
+      element.filterType || "none",
+      element.filterIntensity ?? 100
+    );
+  }, [element.filterType, element.filterIntensity]);
+
+  // Apply filter configuration to the image node
+  useEffect(() => {
+    const node = imageRef.current;
+    if (!node || !image) return;
+
+    if (filterConfig) {
+      // Apply filter config values
+      Object.entries(filterConfig.config).forEach(([key, value]) => {
+        node.setAttr(key, value);
+      });
+      node.cache();
+      node.getLayer()?.batchDraw();
+    } else {
+      // Clear cache when no filter
+      node.clearCache();
+      node.getLayer()?.batchDraw();
+    }
+  }, [filterConfig, image, element.width, element.height]);
 
   // Load tape images for "taped" frame style (4 corners, different colors)
   const tapeUrl1 = useMemo(
@@ -360,6 +478,7 @@ export function CanvasImage({
             clipFunc={clipFunc}
           >
             <Image
+              ref={imageRef}
               image={image}
               x={0}
               y={0}
@@ -369,10 +488,12 @@ export function CanvasImage({
               shadowBlur={isSelected ? 15 : 8}
               shadowOffset={{ x: 2, y: 2 }}
               shadowOpacity={0.5}
+              filters={filterConfig?.filters}
             />
           </Group>
         ) : (
           <Image
+            ref={imageRef}
             image={image}
             x={dims.imageX}
             y={dims.imageY}
@@ -383,6 +504,7 @@ export function CanvasImage({
             shadowBlur={needsFrame ? undefined : (isSelected ? 15 : 8)}
             shadowOffset={needsFrame ? undefined : { x: 2, y: 2 }}
             shadowOpacity={needsFrame ? undefined : 0.5}
+            filters={filterConfig?.filters}
           />
         )}
 
