@@ -49,6 +49,17 @@ export function CanvasEditor({
   const [dimensions, setDimensions] = useState({ width: 400, height: 500 });
   const [openPopover, setOpenPopover] = useState<PopoverType>(null);
 
+  // Pixel ratio for crisp rendering when browser-zooming
+  // 4 = sharp at 400% zoom, good quality for trackpad pinch-zoom
+  // const pixelRatio = 4;
+  // 2 = moderately sharp at 200% zoom, trading off quality for performance
+  const pixelRatio = 2;
+
+  // Set global Konva pixel ratio for consistent rendering
+  if (typeof window !== "undefined") {
+    Konva.pixelRatio = pixelRatio;
+  }
+
   // Track drag start position for multi-select move
   const dragStartRef = useRef<{ id: string; x: number; y: number } | null>(null);
   // Track transform start state for multi-select scale
@@ -542,17 +553,25 @@ export function CanvasEditor({
           <div
             ref={containerRef}
             className="relative bg-white rounded-xl shadow-lg overflow-hidden"
+            style={{ height: dimensions.height }}
           >
-            <Stage
-              width={dimensions.width}
-              height={dimensions.height}
-              scaleX={scale}
-              scaleY={scale}
-              onClick={handleStageClick}
-              onTap={handleStageClick}
+            {/* Render canvas at full resolution, scale down with CSS for display.
+                This ensures sharp images when browser-zooming in with trackpad. */}
+            <div
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+              }}
             >
-              {/* Background Layer */}
-              <Layer>
+              <Stage
+                width={canvasData.width}
+                height={canvasData.height}
+                pixelRatio={pixelRatio}
+                onClick={handleStageClick}
+                onTap={handleStageClick}
+              >
+              {/* Background Layer - listening disabled for performance */}
+              <Layer listening={false}>
                 <CanvasBackground
                   background={canvasData.background}
                   width={canvasData.width}
@@ -561,7 +580,19 @@ export function CanvasEditor({
               </Layer>
 
               {/* Content Layer */}
-              <Layer>
+              <Layer
+                ref={(node) => {
+                  // Set high quality image smoothing for better scaled image rendering
+                  if (node) {
+                    const canvas = node.getCanvas()._canvas;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                      ctx.imageSmoothingEnabled = true;
+                      ctx.imageSmoothingQuality = "high";
+                    }
+                  }
+                }}
+              >
                 {sortedElements.map((element) => {
                   // Apply multi-select offset/scale to non-active selected elements
                   const isActiveElement = multiSelectOffset.activeId === element.id;
@@ -657,6 +688,7 @@ export function CanvasEditor({
                 />
               </Layer>
             </Stage>
+            </div>
 
             {/* Toolbar Popover Menu */}
             <CanvasToolbarPopover
