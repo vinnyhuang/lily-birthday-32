@@ -8,7 +8,7 @@ import { CanvasSticker } from "./CanvasSticker";
 import { CanvasText } from "./CanvasText";
 import { CanvasBackground } from "./CanvasBackground";
 import { AlignmentGuides } from "./AlignmentGuides";
-import { FramePicker } from "./FramePicker";
+import { ElementOptionsPanel } from "./ElementOptionsPanel";
 import { SpiralBinding } from "./SpiralBinding";
 import { useCanvasState } from "./useCanvasState";
 import { useAlignmentGuides } from "./useAlignmentGuides";
@@ -534,119 +534,9 @@ export function CanvasEditor({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex justify-center gap-3">
-        {/* Left Toolbar Column */}
-        <div className="flex flex-col gap-1 pt-1" style={{ width: toolbarWidth }}>
-          {/* Content buttons */}
-          {toolbarButtons.map((btn) => (
-            <Tooltip key={btn.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={openPopover === btn.id ? "secondary" : "ghost"}
-                  size="icon"
-                  className="h-10 w-10"
-                  onClick={() => togglePopover(btn.id)}
-                >
-                  {btn.icon}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                <p>{btn.label}</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-
-          <div className="h-px bg-border my-1" />
-
-          {/* Delete button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 text-destructive hover:text-destructive"
-                onClick={() => selectedIds.length > 0 && removeElement(selectedIds)}
-                disabled={selectedIds.length === 0}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18"/>
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                  <line x1="10" x2="10" y1="11" y2="17"/>
-                  <line x1="14" x2="14" y1="11" y2="17"/>
-                </svg>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Delete</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <div className="h-px bg-border my-1" />
-
-          {/* Undo button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10"
-                onClick={undo}
-                disabled={!canUndo}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 7v6h6"/>
-                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
-                </svg>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Undo</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Redo button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10"
-                onClick={redo}
-                disabled={!canRedo}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 7v6h-6"/>
-                  <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
-                </svg>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Redo</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Spacer to push saved indicator to bottom */}
-          <div className="flex-1" />
-
-          {/* Saved indicator at bottom */}
-          <div className="text-xs text-muted-foreground text-center pb-1">
-            {isSaving ? (
-              <span className="flex flex-col items-center gap-1">
-                <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                <span>Saving</span>
-              </span>
-            ) : lastSaved ? (
-              <span className="flex flex-col items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full" />
-                <span>Saved</span>
-              </span>
-            ) : null}
-          </div>
-        </div>
-
+      <div className="flex justify-center">
         {/* Canvas Area */}
-        <div className="flex-1 max-w-[1200px]">
+        <div className="w-full max-w-[1200px] relative">
           <div
             ref={containerRef}
             className="relative bg-white rounded-xl shadow-lg overflow-hidden"
@@ -766,22 +656,6 @@ export function CanvasEditor({
               </Layer>
             </Stage>
 
-            {/* Frame picker overlay for selected images */}
-            {allImagesSelected && selectedImageElements.length > 0 && (
-              <div className="absolute top-2 right-2 flex items-center gap-2 p-1.5 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border">
-                <span className="text-xs font-medium text-muted-foreground pl-1">
-                  Photo Options{selectedImageElements.length > 1 ? ` (${selectedImageElements.length})` : ""}
-                </span>
-                <FramePicker
-                  currentFrame={selectedImageElements[0].frameStyle || "none"}
-                  onSelect={(frame: FrameStyle) => {
-                    // Apply frame to all selected images
-                    updateElements(selectedIds, { frameStyle: frame });
-                  }}
-                />
-              </div>
-            )}
-
             {/* Toolbar Popover Menu */}
             <CanvasToolbarPopover
               type={openPopover}
@@ -795,10 +669,131 @@ export function CanvasEditor({
               onCanvasMediaIds={onCanvasMediaIds}
             />
           </div>
-        </div>
 
-        {/* Right placeholder to balance the layout */}
-        <div style={{ width: toolbarWidth }} className="hidden sm:block" />
+          {/* Element Options Panel - absolutely positioned to the right of canvas */}
+          {allImagesSelected && selectedImageElements.length > 0 && (
+            <div className="absolute top-0 left-full ml-3 hidden sm:block">
+              <ElementOptionsPanel
+                type="image"
+                selectedCount={selectedImageElements.length}
+                currentFrame={selectedImageElements[0].frameStyle || "none"}
+                onFrameSelect={(frame: FrameStyle) => {
+                  updateElements(selectedIds, { frameStyle: frame });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Left Toolbar - absolutely positioned to the left of canvas */}
+          <div className="absolute top-0 bottom-0 right-full mr-3 flex flex-col gap-1 pt-1" style={{ width: toolbarWidth }}>
+            {/* Content buttons */}
+            {toolbarButtons.map((btn) => (
+              <Tooltip key={btn.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={openPopover === btn.id ? "secondary" : "ghost"}
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={() => togglePopover(btn.id)}
+                  >
+                    {btn.icon}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>{btn.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+
+            <div className="h-px bg-border my-1" />
+
+            {/* Delete button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 text-destructive hover:text-destructive"
+                  onClick={() => selectedIds.length > 0 && removeElement(selectedIds)}
+                  disabled={selectedIds.length === 0}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18"/>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                    <line x1="10" x2="10" y1="11" y2="17"/>
+                    <line x1="14" x2="14" y1="11" y2="17"/>
+                  </svg>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Delete</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="h-px bg-border my-1" />
+
+            {/* Undo button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10"
+                  onClick={undo}
+                  disabled={!canUndo}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 7v6h6"/>
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                  </svg>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Undo</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Redo button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10"
+                  onClick={redo}
+                  disabled={!canRedo}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 7v6h-6"/>
+                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+                  </svg>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Redo</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Spacer to push saved indicator to bottom */}
+            <div className="flex-1" />
+
+            {/* Saved indicator */}
+            <div className="text-xs text-muted-foreground text-center pb-1">
+              {isSaving ? (
+                <span className="flex flex-col items-center gap-1">
+                  <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                  <span>Saving</span>
+                </span>
+              ) : lastSaved ? (
+                <span className="flex flex-col items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full" />
+                  <span>Saved</span>
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </div>
     </TooltipProvider>
   );
