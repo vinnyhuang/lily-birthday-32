@@ -10,6 +10,8 @@ import { Timeline } from "@/components/Timeline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CanvasData, MediaItem } from "@/lib/canvas/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TourProvider } from "@/components/tour/TourProvider";
+import { TourTrigger } from "@/components/tour/TourTrigger";
 
 // Dynamic import for canvas (Konva doesn't work with SSR)
 const CanvasEditor = dynamic(
@@ -44,6 +46,7 @@ export default function PageBuilder() {
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("canvas");
 
   const fetchPage = useCallback(async () => {
     try {
@@ -162,34 +165,35 @@ export default function PageBuilder() {
   }
 
   return (
-    <div className="py-8 px-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="page-title">
-            {pageData.guest.name}&apos;s Page for Lily
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Share your favorite memories and photos with Lily for her 32nd birthday
-          </p>
-        </div>
+    <TourProvider setActiveTab={setActiveTab}>
+      <div className="py-8 px-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h1 className="page-title">
+              {pageData.guest.name}&apos;s Page for Lily
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Share your favorite memories and photos with Lily for her 32nd birthday
+            </p>
+          </div>
 
-        {/* Tabs for Photos, Canvas, Map, and Timeline */}
-        <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="photos">
-              My Photos ({pageData.media.length})
-            </TabsTrigger>
-            <TabsTrigger value="canvas">
-              Scrapbook Pages
-            </TabsTrigger>
-            <TabsTrigger value="map">
-              Map View
-            </TabsTrigger>
-            <TabsTrigger value="timeline">
-              Timeline
-            </TabsTrigger>
-          </TabsList>
+          {/* Tabs for Photos, Canvas, Map, and Timeline */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="photos" data-tour="photos-tab">
+                My Photos ({pageData.media.length})
+              </TabsTrigger>
+              <TabsTrigger value="canvas" data-tour="canvas-tab">
+                Scrapbook Pages
+              </TabsTrigger>
+              <TabsTrigger value="map">
+                Map View
+              </TabsTrigger>
+              <TabsTrigger value="timeline">
+                Timeline
+              </TabsTrigger>
+            </TabsList>
 
           {/* Photo Manager Tab */}
           <TabsContent value="photos" className="mt-6 space-y-6">
@@ -259,6 +263,10 @@ export default function PageBuilder() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Tour help button */}
+      <TourTrigger />
     </div>
+    </TourProvider>
   );
 }
