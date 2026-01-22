@@ -1,78 +1,131 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { stickers, getStickerSrc, Sticker } from "./stickers";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { Sticker } from "./stickers";
+import type { OpenmojiGroup, OpenmojiEmoji } from "./openmojiData";
 
 interface StickerPickerProps {
   onSelect: (sticker: Sticker, src: string) => void;
 }
 
 export function StickerPicker({ onSelect }: StickerPickerProps) {
-  const [selectedCategory, setSelectedCategory] = useState<"emoji" | "stamp">("emoji");
+  const [selectedGroup, setSelectedGroup] = useState<OpenmojiGroup>("smileys-emotion");
+  const [emojis, setEmojis] = useState<OpenmojiEmoji[]>([]);
+  const [groupLabels, setGroupLabels] = useState<Record<OpenmojiGroup, string> | null>(null);
+  const [groupOrder, setGroupOrder] = useState<OpenmojiGroup[]>([]);
+  const [getOpenmojiSvgUrl, setGetOpenmojiSvgUrl] = useState<((hexcode: string) => string) | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Pre-generate sticker sources using useMemo
-  const stickerSources = useMemo(() => {
-    const sources: Record<string, string> = {};
-    stickers.forEach((sticker) => {
-      sources[sticker.id] = getStickerSrc(sticker);
-    });
-    return sources;
+  // Dynamic import of emoji data
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadEmojiData() {
+      const data = await import("./openmojiData");
+      if (mounted) {
+        setGroupLabels(data.groupLabels);
+        setGroupOrder(data.groupOrder);
+        setGetOpenmojiSvgUrl(() => data.getOpenmojiSvgUrl);
+        setEmojis(data.getEmojisByGroup(selectedGroup));
+        setIsLoading(false);
+      }
+    }
+
+    loadEmojiData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const filteredStickers = stickers.filter((s) => s.category === selectedCategory);
+  // Update emojis when group changes
+  useEffect(() => {
+    if (isLoading) return;
 
-  const handleStickerClick = (sticker: Sticker) => {
-    const src = stickerSources[sticker.id];
-    if (src) {
-      onSelect(sticker, src);
+    async function updateEmojis() {
+      const data = await import("./openmojiData");
+      setEmojis(data.getEmojisByGroup(selectedGroup));
     }
-  };
+
+    updateEmojis();
+  }, [selectedGroup, isLoading]);
+
+  const handleEmojiClick = useCallback(
+    (hexcode: string, emoji: string, annotation: string) => {
+      if (!getOpenmojiSvgUrl) return;
+      const src = getOpenmojiSvgUrl(hexcode);
+      const sticker: Sticker = {
+        id: `openmoji-${hexcode}`,
+        emoji: emoji,
+        label: annotation,
+        category: "emoji",
+      };
+      onSelect(sticker, src);
+    },
+    [getOpenmojiSvgUrl, onSelect]
+  );
+
+  if (isLoading || !getOpenmojiSvgUrl) {
+    return (
+      <div className="flex items-center justify-center h-[320px]">
+        <div className="text-muted-foreground text-sm">Loading emojis...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Category tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setSelectedCategory("emoji")}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            selectedCategory === "emoji"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted hover:bg-muted/80"
-          }`}
+    <div className="space-y-3">
+      {/* Category dropdown */}
+      <div>
+        <select
+          value={selectedGroup}
+          onChange={(e) => setSelectedGroup(e.target.value as OpenmojiGroup)}
+          className="w-full px-3 py-2 rounded-lg border border-[#E8DFD6] bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
-          Emojis
-        </button>
-        <button
-          onClick={() => setSelectedCategory("stamp")}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            selectedCategory === "stamp"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted hover:bg-muted/80"
-          }`}
-        >
-          Stamps
-        </button>
+          {groupOrder.map((group) => (
+            <option key={group} value={group}>
+              {groupLabels?.[group] ?? group}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Sticker grid */}
-      <div className="grid grid-cols-6 gap-2">
-        {filteredStickers.map((sticker) => (
+      {/* Emoji grid */}
+      <div className="grid grid-cols-6 gap-1.5 max-h-[300px] overflow-y-auto pr-1">
+        {emojis.map((emoji) => (
           <button
-            key={sticker.id}
-            onClick={() => handleStickerClick(sticker)}
-            className="aspect-square flex items-center justify-center rounded-lg border-2 border-transparent hover:border-primary hover:bg-primary/5 transition-all p-2"
-            title={sticker.label}
+            key={emoji.hexcode}
+            onClick={() => handleEmojiClick(emoji.hexcode, emoji.emoji, emoji.annotation)}
+            className="aspect-square flex items-center justify-center rounded-lg border-2 border-transparent hover:border-primary hover:bg-primary/5 transition-all p-1"
+            title={emoji.annotation}
           >
-            {selectedCategory === "emoji" ? (
-              <span className="text-3xl">{sticker.emoji}</span>
-            ) : (
-              <span className="text-xs font-bold text-primary whitespace-nowrap">
-                {sticker.emoji}
-              </span>
-            )}
+            <Image
+              src={getOpenmojiSvgUrl(emoji.hexcode)}
+              alt={emoji.annotation}
+              width={36}
+              height={36}
+              className="w-9 h-9"
+              loading="lazy"
+              unoptimized
+            />
           </button>
         ))}
       </div>
+
+      {/* Attribution */}
+      <p className="text-xs text-muted-foreground text-center">
+        Emojis by{" "}
+        <a
+          href="https://openmoji.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-primary"
+        >
+          OpenMoji
+        </a>
+        {" "}(CC BY-SA 4.0)
+      </p>
     </div>
   );
 }

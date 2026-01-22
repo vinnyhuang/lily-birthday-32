@@ -66,7 +66,7 @@ export interface CanvasImageElement extends CanvasElementBase {
 }
 
 // Sticker category types
-export type StickerCategory = "emoji" | "stamp" | "washi";
+export type StickerCategory = "emoji" | "washi";
 
 // Sticker decoration element
 export interface CanvasStickerElement extends CanvasElementBase {
@@ -224,7 +224,6 @@ export function createStickerElement(
   // Default sizes based on category
   const defaultSizes: Record<StickerCategory, { width: number; height: number }> = {
     emoji: { width: 80, height: 80 },
-    stamp: { width: 80, height: 80 },
     washi: { width: 120, height: 30 },
   };
 
