@@ -152,7 +152,7 @@ const containerShapes: { id: ContainerShape; label: string; icon: React.ReactNod
 ];
 
 interface ElementOptionsPanelProps {
-  type: "image" | "sticker" | "text";
+  type: "image" | "video" | "sticker" | "text";
   selectedCount: number;
   // Image-specific props
   currentFrame?: FrameStyle;
@@ -357,6 +357,66 @@ export function ElementOptionsPanel({
                 />
               </div>
             )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============ VIDEO PANEL ============
+  if (type === "video") {
+    const showVideoColorPicker = currentFrame === "simple-border" || currentFrame === "rounded";
+    return (
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden w-[240px]">
+        {/* Header */}
+        <div className="border-b border-gray-100">
+          <div className="px-3 py-2 bg-gray-50">
+            <span className="text-sm font-medium text-gray-700">
+              Video Options{selectedCount > 1 ? ` (${selectedCount})` : ""}
+            </span>
+          </div>
+        </div>
+
+        {/* Frames */}
+        <div className="p-3">
+          <div className="text-xs font-medium text-gray-500 mb-2">Frame Style</div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {frames.map((frame) => (
+              <button
+                key={frame.id}
+                onClick={() => onFrameSelect?.(frame.id)}
+                className={`flex flex-col items-center gap-1 p-1.5 rounded-lg border transition-all ${
+                  currentFrame === frame.id
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600"
+                }`}
+                title={frame.description}
+              >
+                <FramePreview frameId={frame.id} isSelected={currentFrame === frame.id} />
+                <span className="text-[10px] leading-tight text-center">{frame.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {showVideoColorPicker && (
+          <div className="px-3 pb-3">
+            <div className="text-xs font-medium text-gray-500 mb-2">Border Color</div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {borderColorOptions.map((color) => (
+                <button
+                  key={color.id}
+                  onClick={() => onBorderColorSelect?.(color.value)}
+                  className={`w-full aspect-square rounded-lg border-2 transition-all ${
+                    currentBorderColor === color.value
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.label}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

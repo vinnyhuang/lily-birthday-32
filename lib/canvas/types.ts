@@ -65,6 +65,17 @@ export interface CanvasImageElement extends CanvasElementBase {
   filterIntensity?: number; // Filter intensity 0-100 (default 100)
 }
 
+// Video element on canvas
+export interface CanvasVideoElement extends CanvasElementBase {
+  type: "video";
+  mediaId: string;
+  s3Key: string;
+  src: string; // Kept for backwards compatibility, but s3Key is preferred
+  thumbnailUrl?: string; // Optional thumbnail for display when not playing
+  frameStyle?: FrameStyle;
+  borderColor?: string; // For simple-border and rounded frames
+}
+
 // Sticker category types
 export type StickerCategory = "emoji" | "washi";
 
@@ -125,6 +136,7 @@ export interface CanvasTextElement extends CanvasElementBase {
 // Union type for all canvas elements
 export type CanvasElement =
   | CanvasImageElement
+  | CanvasVideoElement
   | CanvasStickerElement
   | CanvasTextElement;
 
@@ -198,6 +210,29 @@ export function createImageElement(
   return {
     id: `img-${media.id}`,
     type: "image",
+    mediaId: media.id,
+    s3Key: media.s3Key,
+    src: media.url, // Kept for backwards compatibility
+    x: position.x,
+    y: position.y,
+    width: position.width,
+    height: position.height,
+    rotation: position.rotation || 0,
+    scaleX: 1,
+    scaleY: 1,
+    zIndex,
+  };
+}
+
+// Create a video element from media
+export function createVideoElement(
+  media: MediaItem,
+  position: { x: number; y: number; width: number; height: number; rotation?: number },
+  zIndex: number
+): CanvasVideoElement {
+  return {
+    id: `vid-${media.id}`,
+    type: "video",
     mediaId: media.id,
     s3Key: media.s3Key,
     src: media.url, // Kept for backwards compatibility

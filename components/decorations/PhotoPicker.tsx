@@ -14,13 +14,13 @@ interface PhotoPickerProps {
 export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Filter to show photos not already on canvas, and only photos (not videos for now)
-  const availablePhotos = media.filter(
-    (m) => m.type === "photo" && !onCanvasMediaIds.includes(m.id)
+  // Filter to show media (photos and videos) not already on canvas
+  const availableMedia = media.filter(
+    (m) => !onCanvasMediaIds.includes(m.id)
   );
 
-  const photosOnCanvas = media.filter(
-    (m) => m.type === "photo" && onCanvasMediaIds.includes(m.id)
+  const mediaOnCanvas = media.filter(
+    (m) => onCanvasMediaIds.includes(m.id)
   );
 
   const toggleSelect = (id: string) => {
@@ -36,7 +36,7 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(availablePhotos.map((p) => p.id)));
+    setSelectedIds(new Set(availableMedia.map((p) => p.id)));
   };
 
   const clearSelection = () => {
@@ -44,29 +44,29 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
   };
 
   const handleAddSelected = () => {
-    const selectedPhotos = availablePhotos.filter((p) => selectedIds.has(p.id));
-    if (selectedPhotos.length > 0) {
-      onSelect(selectedPhotos);
+    const selectedMedia = availableMedia.filter((p) => selectedIds.has(p.id));
+    if (selectedMedia.length > 0) {
+      onSelect(selectedMedia);
       setSelectedIds(new Set());
     }
   };
 
-  if (media.filter((m) => m.type === "photo").length === 0) {
+  if (media.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>No photos uploaded yet.</p>
-        <p className="text-sm mt-1">Upload photos from the main page first.</p>
+        <p>No media uploaded yet.</p>
+        <p className="text-sm mt-1">Upload photos or videos from the main page first.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {availablePhotos.length > 0 && (
+      {availableMedia.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
-              Available to add ({availablePhotos.length})
+              Available to add ({availableMedia.length})
             </p>
             <div className="flex items-center gap-2">
               {selectedIds.size > 0 ? (
@@ -87,24 +87,42 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
           </div>
 
           <div className="grid grid-cols-4 gap-2">
-            {availablePhotos.map((photo) => {
-              const isSelected = selectedIds.has(photo.id);
+            {availableMedia.map((item) => {
+              const isSelected = selectedIds.has(item.id);
+              const isVideo = item.type === "video";
               return (
                 <button
-                  key={photo.id}
-                  onClick={() => toggleSelect(photo.id)}
+                  key={item.id}
+                  onClick={() => toggleSelect(item.id)}
                   className={`aspect-square rounded-lg overflow-hidden border-2 transition-all relative ${
                     isSelected
                       ? "border-primary ring-2 ring-primary ring-offset-2"
                       : "border-transparent hover:border-primary/50"
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={getProxyUrl(photo.s3Key)}
-                    alt={photo.caption || "Photo"}
-                    className="w-full h-full object-cover"
-                  />
+                  {isVideo ? (
+                    <video
+                      src={item.url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={getProxyUrl(item.s3Key)}
+                      alt={item.caption || "Photo"}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  {/* Video badge */}
+                  {isVideo && (
+                    <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <span>▶</span>
+                      <span>Video</span>
+                    </div>
+                  )}
                   {isSelected && (
                     <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                       <svg
@@ -130,41 +148,54 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
           {/* Add selected button */}
           {selectedIds.size > 0 && (
             <Button onClick={handleAddSelected} className="w-full">
-              Add {selectedIds.size} photo{selectedIds.size > 1 ? "s" : ""} to canvas
+              Add {selectedIds.size} item{selectedIds.size > 1 ? "s" : ""} to canvas
             </Button>
           )}
         </div>
       )}
 
-      {photosOnCanvas.length > 0 && (
+      {mediaOnCanvas.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
-            Already on canvas ({photosOnCanvas.length})
+            Already on canvas ({mediaOnCanvas.length})
           </p>
           <div className="grid grid-cols-4 gap-2 opacity-50">
-            {photosOnCanvas.map((photo) => (
-              <div
-                key={photo.id}
-                className="aspect-square rounded-lg overflow-hidden border-2 border-muted relative"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={getProxyUrl(photo.s3Key)}
-                  alt={photo.caption || "Photo"}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <span className="text-white text-xs">On canvas</span>
+            {mediaOnCanvas.map((item) => {
+              const isVideo = item.type === "video";
+              return (
+                <div
+                  key={item.id}
+                  className="aspect-square rounded-lg overflow-hidden border-2 border-muted relative"
+                >
+                  {isVideo ? (
+                    <video
+                      src={item.url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={getProxyUrl(item.s3Key)}
+                      alt={item.caption || "Photo"}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <span className="text-white text-xs">On canvas</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {availablePhotos.length === 0 && photosOnCanvas.length > 0 && (
+      {availableMedia.length === 0 && mediaOnCanvas.length > 0 && (
         <p className="text-sm text-muted-foreground text-center py-4">
-          All your photos are already on the canvas!
+          All your media is already on the canvas!
         </p>
       )}
     </div>

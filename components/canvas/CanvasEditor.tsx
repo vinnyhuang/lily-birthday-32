@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Stage, Layer } from "react-konva";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
+import { CanvasVideo } from "./CanvasVideo";
 import { CanvasSticker } from "./CanvasSticker";
 import { CanvasText } from "./CanvasText";
 import { CanvasBackground } from "./CanvasBackground";
@@ -16,6 +17,7 @@ import {
   CanvasData,
   MediaItem,
   CanvasImageElement,
+  CanvasVideoElement,
   CanvasStickerElement,
   CanvasTextElement,
   FrameStyle,
@@ -23,6 +25,7 @@ import {
   createStickerElement,
   createTextElement,
   createImageElement,
+  createVideoElement,
 } from "@/lib/canvas/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -301,7 +304,7 @@ export function CanvasEditor({
 
   // Wrapper for element onChange that handles multi-select
   const handleElementChange = useCallback(
-    (id: string, updates: Partial<CanvasImageElement | CanvasStickerElement | CanvasTextElement>) => {
+    (id: string, updates: Partial<CanvasImageElement | CanvasVideoElement | CanvasStickerElement | CanvasTextElement>) => {
       const keys = Object.keys(updates);
       const isPositionOnlyUpdate = keys.every(k => k === 'x' || k === 'y');
       const isTransformUpdate = keys.some(k => k === 'width' || k === 'height' || k === 'rotation');
@@ -409,41 +412,68 @@ export function CanvasEditor({
     });
   };
 
-  // Handle adding photos from gallery (supports multiple)
+  // Load video dimensions from metadata
+  const loadVideoDimensions = (url: string): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        resolve({ width: video.videoWidth, height: video.videoHeight });
+        video.src = ""; // Clean up
+      };
+      video.onerror = () => {
+        // Fallback to 16:9 if video fails to load
+        resolve({ width: 16, height: 9 });
+      };
+      video.src = url;
+    });
+  };
+
+  // Handle adding photos/videos from gallery (supports multiple)
   const handleAddPhotos = useCallback(
     async (mediaItems: MediaItem[]) => {
       const baseSize = Math.min(canvasData.width, canvasData.height) * 0.35;
       const padding = 40;
 
-      // Load dimensions for all images
-      const itemsWithDimensions = await Promise.all(
-        mediaItems.map(async (item) => {
+      // Separate photos and videos
+      const photos = mediaItems.filter((item) => item.type === "photo");
+      const videos = mediaItems.filter((item) => item.type === "video");
+
+      // Load dimensions for photos
+      const photosWithDimensions = await Promise.all(
+        photos.map(async (item) => {
           const dims = await loadImageDimensions(item.url);
           return { item, dims };
         })
       );
 
-      // Calculate positions - stagger them so they don't overlap completely
-      const elements = itemsWithDimensions.map(({ item, dims }, index) => {
-        // Calculate size maintaining aspect ratio
+      // Load dimensions for videos
+      const videosWithDimensions = await Promise.all(
+        videos.map(async (item) => {
+          const dims = await loadVideoDimensions(item.url);
+          return { item, dims };
+        })
+      );
+
+      let zIndexCounter = maxZIndex;
+
+      // Calculate positions for photos
+      const photoElements = photosWithDimensions.map(({ item, dims }, index) => {
         const aspectRatio = dims.width / dims.height;
         let width: number;
         let height: number;
 
         if (aspectRatio > 1) {
-          // Landscape
           width = baseSize;
           height = baseSize / aspectRatio;
         } else {
-          // Portrait or square
           height = baseSize;
           width = baseSize * aspectRatio;
         }
 
-        // Stagger position for multiple photos
         const offsetX = (index % 3) * 60 - 60;
         const offsetY = Math.floor(index / 3) * 60 - 30;
-        const rotation = (Math.random() - 0.5) * 10; // Slight random rotation
+        const rotation = (Math.random() - 0.5) * 10;
 
         const x = Math.max(padding, Math.min(
           canvasData.width - width - padding,
@@ -454,22 +484,55 @@ export function CanvasEditor({
           canvasData.height / 2 - height / 2 + offsetY
         ));
 
-        return createImageElement(
-          item,
-          { x, y, width, height, rotation },
-          maxZIndex + index + 1
-        );
+        zIndexCounter++;
+        return createImageElement(item, { x, y, width, height, rotation }, zIndexCounter);
+      });
+
+      // Calculate positions for videos using actual dimensions
+      const videoElements = videosWithDimensions.map(({ item, dims }, index) => {
+        const aspectRatio = dims.width / dims.height;
+        let width: number;
+        let height: number;
+
+        if (aspectRatio > 1) {
+          width = baseSize;
+          height = baseSize / aspectRatio;
+        } else {
+          height = baseSize;
+          width = baseSize * aspectRatio;
+        }
+
+        // Offset videos from photos
+        const totalPhotoOffset = photos.length > 0 ? photos.length : 0;
+        const combinedIndex = totalPhotoOffset + index;
+        const offsetX = (combinedIndex % 3) * 60 - 60;
+        const offsetY = Math.floor(combinedIndex / 3) * 60 - 30;
+        const rotation = (Math.random() - 0.5) * 10;
+
+        const x = Math.max(padding, Math.min(
+          canvasData.width - width - padding,
+          canvasData.width / 2 - width / 2 + offsetX
+        ));
+        const y = Math.max(padding, Math.min(
+          canvasData.height - height - padding,
+          canvasData.height / 2 - height / 2 + offsetY
+        ));
+
+        zIndexCounter++;
+        return createVideoElement(item, { x, y, width, height, rotation }, zIndexCounter);
       });
 
       // Add all elements
-      elements.forEach((el) => addElement(el));
+      [...photoElements, ...videoElements].forEach((el) => addElement(el));
     },
     [addElement, canvasData.width, canvasData.height, maxZIndex]
   );
 
-  // Get media IDs currently on canvas
+  // Get media IDs currently on canvas (both images and videos)
   const onCanvasMediaIds = canvasData.elements
-    .filter((el): el is CanvasImageElement => el.type === "image")
+    .filter((el): el is CanvasImageElement | CanvasVideoElement =>
+      el.type === "image" || el.type === "video"
+    )
     .map((el) => el.mediaId);
 
   // Format last saved time
@@ -501,6 +564,12 @@ export function CanvasEditor({
   const allTextSelected = selectedType === "text";
   const selectedTextElements = allTextSelected
     ? (selectedElements as CanvasTextElement[])
+    : [];
+
+  // For options bar - show when all selected are videos
+  const allVideosSelected = selectedType === "video";
+  const selectedVideoElements = allVideosSelected
+    ? (selectedElements as CanvasVideoElement[])
     : [];
 
   // Toolbar buttons configuration
@@ -675,7 +744,28 @@ export function CanvasEditor({
                       />
                     );
                   }
-                                    return null;
+                  if (element.type === "video") {
+                    return (
+                      <CanvasVideo
+                        key={element.id}
+                        element={transformedElement as CanvasVideoElement}
+                        isSelected={selectedIds.includes(element.id)}
+                        onSelect={(e) => handleElementSelect(element.id, e)}
+                        onChange={(updates) => handleElementChange(element.id, updates)}
+                        onDragStart={() => {
+                          handleMultiDragStart(element.id);
+                          onGuideDragStart(element.id);
+                        }}
+                        onDragMove={(newX, newY) => {
+                          handleMultiDragMove(element.id, newX, newY);
+                          return onGuideDragMove(element, newX, newY);
+                        }}
+                        onDragEnd={onGuideDragEnd}
+                        onTransform={(scaleX, scaleY) => handleMultiTransform(element.id, scaleX, scaleY)}
+                      />
+                    );
+                  }
+                  return null;
                 })}
 
                 {/* Alignment Guides */}
@@ -727,6 +817,24 @@ export function CanvasEditor({
                 }}
                 onFilterIntensityChange={(intensity: number) => {
                   updateElements(selectedIds, { filterIntensity: intensity });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Video Options Panel */}
+          {allVideosSelected && selectedVideoElements.length > 0 && (
+            <div className="absolute top-0 left-full ml-3 hidden sm:block">
+              <ElementOptionsPanel
+                type="video"
+                selectedCount={selectedVideoElements.length}
+                currentFrame={selectedVideoElements[0].frameStyle || "none"}
+                currentBorderColor={selectedVideoElements[0].borderColor || "#FFFFFF"}
+                onFrameSelect={(frame: FrameStyle) => {
+                  updateElements(selectedIds, { frameStyle: frame });
+                }}
+                onBorderColorSelect={(color: string) => {
+                  updateElements(selectedIds, { borderColor: color });
                 }}
               />
             </div>

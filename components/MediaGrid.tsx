@@ -102,10 +102,11 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
               />
             ) : (
               <video
-                src={getProxyUrl(item.s3Key)}
+                src={item.url}
                 className="w-full h-full object-cover"
                 muted
                 playsInline
+                preload="metadata"
                 onMouseEnter={(e) => e.currentTarget.play()}
                 onMouseLeave={(e) => {
                   e.currentTarget.pause();
