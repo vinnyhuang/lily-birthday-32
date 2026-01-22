@@ -163,16 +163,19 @@ export function CanvasEditor({
   const onGuideDragEnd = () => {};
 
   // Responsive sizing with visibility detection
+  // Side panels: left toolbar (40+12) + right options (240+12) + page padding (32) + breathing room
+  const sideSpace = 370;
+
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
         // Only update if container is visible (not hidden by tab switching)
-        // This prevents Konva errors when forceMount renders the canvas while hidden
         if (containerWidth > 0) {
-          const maxWidth = Math.min(containerWidth, 1200);
-          const height = maxWidth * (9 / 16); // 16:9 aspect ratio for two-page spread
-          setDimensions({ width: maxWidth, height });
+          const viewportWidth = window.innerWidth;
+          const canvasWidth = Math.min(viewportWidth - sideSpace, 1200);
+          const height = canvasWidth * (9 / 16); // 16:9 aspect ratio
+          setDimensions({ width: canvasWidth, height });
         }
       }
     };
@@ -839,7 +842,7 @@ export function CanvasEditor({
     <TooltipProvider delayDuration={300}>
       <div className="flex justify-center">
         {/* Canvas Area */}
-        <div className="w-full max-w-[1200px] relative">
+        <div className="relative" style={{ width: dimensions.width }}>
           <div
             ref={containerRef}
             className="relative bg-white rounded-xl shadow-lg overflow-hidden"
@@ -1080,7 +1083,7 @@ export function CanvasEditor({
 
           {/* Element Options Panel - absolutely positioned to the right of canvas */}
           {allImagesSelected && selectedImageElements.length > 0 && (
-            <div className="absolute top-0 left-full ml-3 hidden sm:block">
+            <div className="absolute top-0 left-full ml-3">
               <ElementOptionsPanel
                 type="image"
                 selectedCount={selectedImageElements.length}
@@ -1106,7 +1109,7 @@ export function CanvasEditor({
 
           {/* Video Options Panel */}
           {allVideosSelected && selectedVideoElements.length > 0 && (
-            <div className="absolute top-0 left-full ml-3 hidden sm:block">
+            <div className="absolute top-0 left-full ml-3">
               <ElementOptionsPanel
                 type="video"
                 selectedCount={selectedVideoElements.length}
@@ -1124,7 +1127,7 @@ export function CanvasEditor({
 
           {/* Text Options Panel */}
           {allTextSelected && selectedTextElements.length > 0 && (
-            <div className="absolute top-0 left-full ml-3 hidden sm:block">
+            <div className="absolute top-0 left-full ml-3">
               <ElementOptionsPanel
                 type="text"
                 selectedCount={selectedTextElements.length}
