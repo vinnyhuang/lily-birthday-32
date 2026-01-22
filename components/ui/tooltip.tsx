@@ -25,7 +25,7 @@ interface TooltipProps {
 }
 
 function Tooltip({ children }: TooltipProps) {
-  return <div className="relative inline-flex">{children}</div>;
+  return <div className="relative">{children}</div>;
 }
 
 interface TooltipTriggerProps {

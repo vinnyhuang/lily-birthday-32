@@ -99,7 +99,7 @@ export function CanvasToolbarPopover({
   return (
     <div
       ref={popoverRef}
-      className="absolute top-2 left-2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden"
+      className="absolute top-2 left-2 z-50 bg-white rounded-lg shadow-lg border border-gray-200"
       style={{ maxHeight: "calc(100% - 16px)", maxWidth: "320px" }}
     >
       {/* Header */}
@@ -117,7 +117,7 @@ export function CanvasToolbarPopover({
       </div>
 
       {/* Content */}
-      <div className="p-3 overflow-y-auto" style={{ maxHeight: "400px" }}>
+      <div className="p-3 overflow-visible" style={{ maxHeight: "400px" }}>
         {type === "photos" && (
           <PhotoPicker
             media={media}

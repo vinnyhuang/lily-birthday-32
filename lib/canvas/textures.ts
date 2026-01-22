@@ -39,23 +39,23 @@ function createDotsPattern(bgColor: string, dotColor: string, dotSize: number = 
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-function createLinesPattern(bgColor: string, lineColor: string, spacing: number = 24): string {
+function createLinesPattern(bgColor: string, lineColor: string, spacing: number = 24, opacity: number = 0.4): string {
   // Notebook-style horizontal lines
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="${spacing}">
       <rect width="10" height="${spacing}" fill="${bgColor}"/>
-      <line x1="0" y1="${spacing - 1}" x2="10" y2="${spacing - 1}" stroke="${lineColor}" stroke-width="1" opacity="0.3"/>
+      <line x1="0" y1="${spacing - 1}" x2="10" y2="${spacing - 1}" stroke="${lineColor}" stroke-width="1" opacity="${opacity}"/>
     </svg>
   `.trim().replace(/\s+/g, ' ');
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-function createGridPattern(bgColor: string, lineColor: string, spacing: number = 20): string {
+function createGridPattern(bgColor: string, lineColor: string, spacing: number = 20, opacity: number = 0.4): string {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${spacing}" height="${spacing}">
       <rect width="${spacing}" height="${spacing}" fill="${bgColor}"/>
-      <line x1="${spacing}" y1="0" x2="${spacing}" y2="${spacing}" stroke="${lineColor}" stroke-width="0.5" opacity="0.2"/>
-      <line x1="0" y1="${spacing}" x2="${spacing}" y2="${spacing}" stroke="${lineColor}" stroke-width="0.5" opacity="0.2"/>
+      <line x1="${spacing}" y1="0" x2="${spacing}" y2="${spacing}" stroke="${lineColor}" stroke-width="1" opacity="${opacity}"/>
+      <line x1="0" y1="${spacing}" x2="${spacing}" y2="${spacing}" stroke="${lineColor}" stroke-width="1" opacity="${opacity}"/>
     </svg>
   `.trim().replace(/\s+/g, ' ');
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
@@ -88,20 +88,20 @@ function createKraftPattern(): string {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
       <rect width="80" height="80" fill="#C4A77D"/>
-      <line x1="0" y1="5" x2="20" y2="8" stroke="#B89B6A" stroke-width="0.5" opacity="0.3"/>
-      <line x1="30" y1="2" x2="55" y2="6" stroke="#B89B6A" stroke-width="0.3" opacity="0.25"/>
-      <line x1="60" y1="10" x2="80" y2="7" stroke="#B89B6A" stroke-width="0.4" opacity="0.3"/>
-      <line x1="5" y1="25" x2="35" y2="28" stroke="#B89B6A" stroke-width="0.5" opacity="0.25"/>
-      <line x1="45" y1="30" x2="75" y2="27" stroke="#B89B6A" stroke-width="0.3" opacity="0.3"/>
-      <line x1="10" y1="45" x2="40" y2="48" stroke="#B89B6A" stroke-width="0.4" opacity="0.25"/>
-      <line x1="50" y1="50" x2="80" y2="47" stroke="#B89B6A" stroke-width="0.5" opacity="0.3"/>
-      <line x1="0" y1="65" x2="25" y2="68" stroke="#B89B6A" stroke-width="0.3" opacity="0.25"/>
-      <line x1="35" y1="70" x2="60" y2="67" stroke="#B89B6A" stroke-width="0.4" opacity="0.3"/>
-      <line x1="65" y1="75" x2="80" y2="73" stroke="#B89B6A" stroke-width="0.5" opacity="0.25"/>
-      <circle cx="15" cy="15" r="0.8" fill="#D4B78D" opacity="0.4"/>
-      <circle cx="55" cy="38" r="0.6" fill="#D4B78D" opacity="0.3"/>
-      <circle cx="25" cy="60" r="0.7" fill="#D4B78D" opacity="0.35"/>
-      <circle cx="70" cy="55" r="0.5" fill="#D4B78D" opacity="0.4"/>
+      <line x1="0" y1="5" x2="20" y2="8" stroke="#9A8055" stroke-width="1.5" opacity="0.5"/>
+      <line x1="30" y1="2" x2="55" y2="6" stroke="#9A8055" stroke-width="1" opacity="0.45"/>
+      <line x1="60" y1="10" x2="80" y2="7" stroke="#9A8055" stroke-width="1.2" opacity="0.5"/>
+      <line x1="5" y1="25" x2="35" y2="28" stroke="#9A8055" stroke-width="1.5" opacity="0.45"/>
+      <line x1="45" y1="30" x2="75" y2="27" stroke="#9A8055" stroke-width="1" opacity="0.5"/>
+      <line x1="10" y1="45" x2="40" y2="48" stroke="#9A8055" stroke-width="1.2" opacity="0.45"/>
+      <line x1="50" y1="50" x2="80" y2="47" stroke="#9A8055" stroke-width="1.5" opacity="0.5"/>
+      <line x1="0" y1="65" x2="25" y2="68" stroke="#9A8055" stroke-width="1" opacity="0.45"/>
+      <line x1="35" y1="70" x2="60" y2="67" stroke="#9A8055" stroke-width="1.2" opacity="0.5"/>
+      <line x1="65" y1="75" x2="80" y2="73" stroke="#9A8055" stroke-width="1.5" opacity="0.45"/>
+      <circle cx="15" cy="15" r="1.5" fill="#E5C99D" opacity="0.6"/>
+      <circle cx="55" cy="38" r="1.2" fill="#E5C99D" opacity="0.5"/>
+      <circle cx="25" cy="60" r="1.3" fill="#E5C99D" opacity="0.55"/>
+      <circle cx="70" cy="55" r="1" fill="#E5C99D" opacity="0.6"/>
     </svg>
   `.trim().replace(/\s+/g, ' ');
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
@@ -112,18 +112,18 @@ function createConstructionPaperPattern(baseColor: string, fiberColor: string): 
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
       <rect width="50" height="50" fill="${baseColor}"/>
-      <line x1="2" y1="5" x2="8" y2="6" stroke="${fiberColor}" stroke-width="0.5" opacity="0.15"/>
-      <line x1="15" y1="3" x2="22" y2="4" stroke="${fiberColor}" stroke-width="0.3" opacity="0.12"/>
-      <line x1="30" y1="8" x2="38" y2="7" stroke="${fiberColor}" stroke-width="0.4" opacity="0.15"/>
-      <line x1="42" y1="2" x2="48" y2="3" stroke="${fiberColor}" stroke-width="0.3" opacity="0.1"/>
-      <line x1="5" y1="18" x2="12" y2="19" stroke="${fiberColor}" stroke-width="0.4" opacity="0.12"/>
-      <line x1="25" y1="22" x2="33" y2="21" stroke="${fiberColor}" stroke-width="0.5" opacity="0.15"/>
-      <line x1="40" y1="25" x2="48" y2="24" stroke="${fiberColor}" stroke-width="0.3" opacity="0.1"/>
-      <line x1="3" y1="35" x2="10" y2="36" stroke="${fiberColor}" stroke-width="0.4" opacity="0.12"/>
-      <line x1="20" y1="38" x2="28" y2="37" stroke="${fiberColor}" stroke-width="0.5" opacity="0.15"/>
-      <line x1="35" y1="42" x2="45" y2="41" stroke="${fiberColor}" stroke-width="0.3" opacity="0.12"/>
-      <line x1="8" y1="48" x2="15" y2="47" stroke="${fiberColor}" stroke-width="0.4" opacity="0.1"/>
-      <line x1="28" y1="45" x2="35" y2="46" stroke="${fiberColor}" stroke-width="0.5" opacity="0.15"/>
+      <line x1="2" y1="5" x2="10" y2="6" stroke="${fiberColor}" stroke-width="1.5" opacity="0.4"/>
+      <line x1="15" y1="3" x2="24" y2="4" stroke="${fiberColor}" stroke-width="1" opacity="0.35"/>
+      <line x1="30" y1="8" x2="40" y2="7" stroke="${fiberColor}" stroke-width="1.2" opacity="0.4"/>
+      <line x1="42" y1="2" x2="48" y2="3" stroke="${fiberColor}" stroke-width="1" opacity="0.3"/>
+      <line x1="5" y1="18" x2="14" y2="19" stroke="${fiberColor}" stroke-width="1.2" opacity="0.35"/>
+      <line x1="25" y1="22" x2="35" y2="21" stroke="${fiberColor}" stroke-width="1.5" opacity="0.4"/>
+      <line x1="40" y1="25" x2="48" y2="24" stroke="${fiberColor}" stroke-width="1" opacity="0.3"/>
+      <line x1="3" y1="35" x2="12" y2="36" stroke="${fiberColor}" stroke-width="1.2" opacity="0.35"/>
+      <line x1="20" y1="38" x2="30" y2="37" stroke="${fiberColor}" stroke-width="1.5" opacity="0.4"/>
+      <line x1="35" y1="42" x2="46" y2="41" stroke="${fiberColor}" stroke-width="1" opacity="0.35"/>
+      <line x1="8" y1="48" x2="16" y2="47" stroke="${fiberColor}" stroke-width="1.2" opacity="0.3"/>
+      <line x1="28" y1="45" x2="38" y2="46" stroke="${fiberColor}" stroke-width="1.5" opacity="0.4"/>
     </svg>
   `.trim().replace(/\s+/g, ' ');
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
@@ -163,14 +163,14 @@ export const textures: TextureDefinition[] = [
     id: "notebook",
     name: "Notebook",
     category: "specialty",
-    pattern: createLinesPattern("#FFFFFF", "#90CAF9", 26),
+    pattern: createLinesPattern("#FFFFFF", "#90CAF9", 26, 0.45),
     tileSize: 26,
   },
   {
     id: "grid",
     name: "Graph Paper",
     category: "specialty",
-    pattern: createGridPattern("#FFFFFF", "#90CAF9", 20),
+    pattern: createGridPattern("#FFFFFF", "#90CAF9", 20, 0.5),
     tileSize: 20,
   },
   {
@@ -184,7 +184,7 @@ export const textures: TextureDefinition[] = [
     id: "linen",
     name: "Linen",
     category: "paper",
-    pattern: createGridPattern("#FAF7F2", "#E8E0D5", 6),
+    pattern: createGridPattern("#FAF7F2", "#D5C9B8", 6, 0.5),
     tileSize: 6,
   },
 ];
