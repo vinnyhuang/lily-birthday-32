@@ -225,8 +225,8 @@ export const DEFAULT_CANVAS_HEIGHT = 900;
 
 // Default background for new pages
 export const DEFAULT_PAGE_BACKGROUND: CanvasBackground = {
-  type: "color",
-  value: "#FFF8F0", // Warm cream from theme
+  type: "texture",
+  value: "pink-construction",
 };
 
 // Generate a unique page ID

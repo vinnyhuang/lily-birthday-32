@@ -13,7 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CanvasPage, CanvasBackground, DEFAULT_PAGE_BACKGROUND } from "@/lib/canvas/types";
+import { CanvasPage, CanvasBackground } from "@/lib/canvas/types";
 import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Image as ImageIcon, Type, Sticker, Pencil, X } from "lucide-react";
 import { textures } from "@/lib/canvas/textures";
 
@@ -43,30 +43,47 @@ function getBackgroundStyle(page: CanvasPage): React.CSSProperties {
   return { backgroundColor: "#FFF8F0" };
 }
 
+// Solid color options (matches BackgroundPicker palette)
+const solidColors: CanvasBackground[] = [
+  { type: "color", value: "#FFF8F0" }, // Cream
+  { type: "color", value: "#FDE8E8" }, // Blush
+  { type: "color", value: "#FEEBC8" }, // Peach
+  { type: "color", value: "#E8F5E9" }, // Sage
+  { type: "color", value: "#EDE7F6" }, // Lavender
+  { type: "color", value: "#E3F2FD" }, // Sky
+  { type: "color", value: "#FFCCBC" }, // Coral
+  { type: "color", value: "#FFF9C4" }, // Lemon
+  { type: "color", value: "#FFFFFF" }, // White
+  { type: "color", value: "#F5F5F4" }, // Warm Gray
+];
+
 // Get a random unused background for a new page
 function getRandomUnusedBackground(pages: CanvasPage[]): CanvasBackground {
-  // Get all backgrounds currently in use
   const usedBackgrounds = new Set(
     pages.map((p) => `${p.background.type}:${p.background.value}`)
   );
 
-  // Build list of all available backgrounds (textures + default color)
-  const allBackgrounds: CanvasBackground[] = [
-    DEFAULT_PAGE_BACKGROUND,
-    ...textures.map((t) => ({ type: "texture" as const, value: t.id })),
-  ];
+  const allTextures: CanvasBackground[] = textures.map((t) => ({ type: "texture", value: t.id }));
 
-  // Filter to unused backgrounds
-  const unusedBackgrounds = allBackgrounds.filter(
+  // 1. Try a random unused texture
+  const unusedTextures = allTextures.filter(
     (bg) => !usedBackgrounds.has(`${bg.type}:${bg.value}`)
   );
+  if (unusedTextures.length > 0) {
+    return unusedTextures[Math.floor(Math.random() * unusedTextures.length)];
+  }
 
-  // If all are used, pick from all backgrounds
-  const availablePool = unusedBackgrounds.length > 0 ? unusedBackgrounds : allBackgrounds;
+  // 2. Try a random unused solid color
+  const unusedColors = solidColors.filter(
+    (bg) => !usedBackgrounds.has(`${bg.type}:${bg.value}`)
+  );
+  if (unusedColors.length > 0) {
+    return unusedColors[Math.floor(Math.random() * unusedColors.length)];
+  }
 
-  // Pick one at random
-  const randomIndex = Math.floor(Math.random() * availablePool.length);
-  return availablePool[randomIndex];
+  // 3. All used — pick any at random
+  const all = [...allTextures, ...solidColors];
+  return all[Math.floor(Math.random() * all.length)];
 }
 
 // Count elements by type
