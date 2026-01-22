@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Token {
   id: string;
@@ -23,6 +30,9 @@ export default function TokensPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [count, setCount] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<Token | null>(null);
+  const [deleteInput, setDeleteInput] = useState("");
 
   const fetchTokens = async () => {
     try {
@@ -127,8 +137,25 @@ export default function TokensPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="section-header">All Tokens ({tokens.length})</CardTitle>
+          {tokens.some((t) => !t.used) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+                const links = tokens
+                  .filter((t) => !t.used)
+                  .map((t) => `${baseUrl}/invite/${t.token}`);
+                await navigator.clipboard.writeText(links.join("\n"));
+                setCopiedAll(true);
+                setTimeout(() => setCopiedAll(false), 2000);
+              }}
+            >
+              {copiedAll ? "Copied!" : `Copy ${tokens.filter((t) => !t.used).length} Unclaimed Links`}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {tokens.length === 0 ? (
@@ -174,7 +201,19 @@ export default function TokensPage() {
                     >
                       {copiedId === token.id ? "Copied!" : "Copy Link"}
                     </Button>
-                    {!token.used && (
+                    {token.used ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          setDeleteConfirm(token);
+                          setDeleteInput("");
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    ) : (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -191,6 +230,60 @@ export default function TokensPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete confirmation dialog for claimed tokens */}
+      <Dialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteConfirm(null);
+            setDeleteInput("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Claimed Token</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the token, the guest ({deleteConfirm?.guest?.name}), their page, and all their uploaded media. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm">
+              Type <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-sm">delete {deleteConfirm?.guest?.name}</code> to confirm:
+            </p>
+            <Input
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              placeholder={`delete ${deleteConfirm?.guest?.name || ""}`}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteConfirm(null);
+                  setDeleteInput("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={deleteInput !== `delete ${deleteConfirm?.guest?.name}`}
+                onClick={async () => {
+                  if (deleteConfirm) {
+                    await deleteToken(deleteConfirm.id);
+                    setDeleteConfirm(null);
+                    setDeleteInput("");
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

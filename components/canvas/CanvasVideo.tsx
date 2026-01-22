@@ -11,8 +11,9 @@ import { getThumbnailS3Key, getProxyUrl } from "@/lib/s3";
 interface CanvasVideoProps {
   element: CanvasVideoElement;
   isSelected: boolean;
-  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onChange: (updates: Partial<CanvasVideoElement>) => void;
+  readOnly?: boolean;
+  onSelect?: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onChange?: (updates: Partial<CanvasVideoElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
@@ -22,6 +23,7 @@ interface CanvasVideoProps {
 export function CanvasVideo({
   element,
   isSelected,
+  readOnly,
   onSelect,
   onChange,
   onDragStart,
@@ -153,7 +155,7 @@ export function CanvasVideo({
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    onChange({
+    onChange?.({
       x: e.target.x(),
       y: e.target.y(),
     });
@@ -170,7 +172,7 @@ export function CanvasVideo({
     node.scaleX(1);
     node.scaleY(1);
 
-    onChange({
+    onChange?.({
       x: node.x(),
       y: node.y(),
       width: Math.max(50, element.width * scaleX),
@@ -180,12 +182,12 @@ export function CanvasVideo({
   };
 
   const handleClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    if (isSelected) {
-      // If already selected, toggle play
+    if (readOnly) {
+      togglePlay();
+    } else if (isSelected) {
       togglePlay();
     } else {
-      // If not selected, select the element
-      onSelect(e);
+      onSelect?.(e);
     }
   };
 
@@ -342,13 +344,13 @@ export function CanvasVideo({
         x={element.x}
         y={element.y}
         rotation={element.rotation}
-        draggable
+        draggable={!readOnly}
         onClick={handleClick}
         onTap={handleClick}
-        onDragStart={handleDragStart}
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
+        onDragStart={readOnly ? undefined : handleDragStart}
+        onDragMove={readOnly ? undefined : handleDragMove}
+        onDragEnd={readOnly ? undefined : handleDragEnd}
+        onTransformEnd={readOnly ? undefined : handleTransformEnd}
       >
         {/* Frame background for polaroid/rounded/simple-border */}
         {needsFrame && (
@@ -538,7 +540,7 @@ export function CanvasVideo({
         )}
       </Group>
 
-      {isSelected && (
+      {isSelected && !readOnly && (
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}

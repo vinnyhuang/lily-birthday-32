@@ -100,21 +100,31 @@ export async function DELETE(request: NextRequest) {
 
     const { tokenId } = parsed.data;
 
-    // Check if token is already used
     const token = await db.inviteToken.findUnique({
       where: { id: tokenId },
-      include: { guest: true },
+      include: {
+        guest: {
+          include: {
+            page: true,
+          },
+        },
+      },
     });
 
     if (!token) {
       return NextResponse.json({ error: "Token not found" }, { status: 404 });
     }
 
-    if (token.used || token.guest) {
-      return NextResponse.json(
-        { error: "Cannot delete a used token" },
-        { status: 400 }
-      );
+    // Cascade delete: media (auto via Page onDelete), page, guest, then token
+    if (token.guest) {
+      if (token.guest.page) {
+        await db.page.delete({
+          where: { id: token.guest.page.id },
+        });
+      }
+      await db.guest.delete({
+        where: { id: token.guest.id },
+      });
     }
 
     await db.inviteToken.delete({

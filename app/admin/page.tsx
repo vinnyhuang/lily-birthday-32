@@ -97,7 +97,7 @@ export default async function AdminDashboard() {
           <CardHeader>
             <CardTitle className="section-header">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="flex flex-col gap-3">
             <Link href="/admin/tokens">
               <Button className="w-full justify-start gap-3" variant="outline">
                 <span>🎟️</span>
@@ -108,6 +108,12 @@ export default async function AdminDashboard() {
               <Button className="w-full justify-start gap-3" variant="outline">
                 <span>📖</span>
                 View Guest Pages
+              </Button>
+            </Link>
+            <Link href="/admin/aggregate">
+              <Button className="w-full justify-start gap-3" variant="outline">
+                <span>🗂️</span>
+                Open Aggregate Views
               </Button>
             </Link>
           </CardContent>

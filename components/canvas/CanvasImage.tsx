@@ -101,8 +101,9 @@ function getKonvaFilters(filterType: FilterType, intensity: number): {
 interface CanvasImageProps {
   element: CanvasImageElement;
   isSelected: boolean;
-  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onChange: (updates: Partial<CanvasImageElement>) => void;
+  readOnly?: boolean;
+  onSelect?: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onChange?: (updates: Partial<CanvasImageElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
@@ -112,6 +113,7 @@ interface CanvasImageProps {
 export function CanvasImage({
   element,
   isSelected,
+  readOnly,
   onSelect,
   onChange,
   onDragStart,
@@ -210,7 +212,7 @@ export function CanvasImage({
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    onChange({
+    onChange?.({
       x: e.target.x(),
       y: e.target.y(),
     });
@@ -227,7 +229,7 @@ export function CanvasImage({
     node.scaleX(1);
     node.scaleY(1);
 
-    onChange({
+    onChange?.({
       x: node.x(),
       y: node.y(),
       width: Math.max(50, element.width * scaleX),
@@ -444,13 +446,13 @@ export function CanvasImage({
         x={element.x}
         y={element.y}
         rotation={element.rotation}
-        draggable
-        onClick={(e) => onSelect(e)}
-        onTap={(e) => onSelect(e)}
-        onDragStart={handleDragStart}
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
+        draggable={!readOnly}
+        onClick={readOnly ? undefined : (e) => onSelect?.(e)}
+        onTap={readOnly ? undefined : (e) => onSelect?.(e)}
+        onDragStart={readOnly ? undefined : handleDragStart}
+        onDragMove={readOnly ? undefined : handleDragMove}
+        onDragEnd={readOnly ? undefined : handleDragEnd}
+        onTransformEnd={readOnly ? undefined : handleTransformEnd}
       >
         {/* Frame background for polaroid/rounded/simple-border */}
         {needsFrame && (
@@ -579,7 +581,7 @@ export function CanvasImage({
         )}
       </Group>
 
-      {isSelected && (
+      {isSelected && !readOnly && (
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}
@@ -602,7 +604,6 @@ export function CanvasImage({
             }
           }}
           onTransformEnd={() => {
-            // Clear the transform preview
             if (onTransform) {
               onTransform(1, 1);
             }

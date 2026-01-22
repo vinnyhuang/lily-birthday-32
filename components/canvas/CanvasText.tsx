@@ -437,8 +437,9 @@ function shadeColor(color: string, percent: number): string {
 interface CanvasTextProps {
   element: CanvasTextElement;
   isSelected: boolean;
-  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onChange: (updates: Partial<CanvasTextElement>) => void;
+  readOnly?: boolean;
+  onSelect?: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onChange?: (updates: Partial<CanvasTextElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
@@ -448,6 +449,7 @@ interface CanvasTextProps {
 export function CanvasText({
   element,
   isSelected,
+  readOnly,
   onSelect,
   onChange,
   onDragStart,
@@ -503,7 +505,7 @@ export function CanvasText({
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    onChange({
+    onChange?.({
       x: e.target.x(),
       y: e.target.y(),
     });
@@ -534,7 +536,7 @@ export function CanvasText({
     boundsNode.rotation(0);
 
     // Update element with new dimensions and rotation
-    onChange({
+    onChange?.({
       x: absPos.x,
       y: absPos.y,
       width: Math.max(50, element.width * scaleX),
@@ -591,7 +593,7 @@ export function CanvasText({
     textarea.select();
 
     const handleBlur = () => {
-      onChange({ text: textarea.value || "Text" });
+      onChange?.({ text: textarea.value || "Text" });
       document.body.removeChild(textarea);
       setIsEditing(false);
     };
@@ -654,14 +656,14 @@ export function CanvasText({
         x={element.x}
         y={element.y}
         rotation={element.rotation}
-        draggable
-        onClick={(e) => onSelect(e)}
-        onTap={(e) => onSelect(e)}
-        onDblClick={handleDoubleClick}
-        onDblTap={handleDoubleClick}
-        onDragStart={handleDragStart}
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
+        draggable={!readOnly}
+        onClick={readOnly ? undefined : (e) => onSelect?.(e)}
+        onTap={readOnly ? undefined : (e) => onSelect?.(e)}
+        onDblClick={readOnly ? undefined : handleDoubleClick}
+        onDblTap={readOnly ? undefined : handleDoubleClick}
+        onDragStart={readOnly ? undefined : handleDragStart}
+        onDragMove={readOnly ? undefined : handleDragMove}
+        onDragEnd={readOnly ? undefined : handleDragEnd}
         visible={!isEditing}
       >
         {/* Invisible bounds rect for transformer attachment */}
@@ -718,7 +720,7 @@ export function CanvasText({
         />
       </Group>
 
-      {isSelected && !isEditing && (
+      {isSelected && !isEditing && !readOnly && (
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}

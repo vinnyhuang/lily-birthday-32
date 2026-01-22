@@ -17,6 +17,7 @@ export function AdminNav() {
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/tokens", label: "Invite Tokens" },
     { href: "/admin/pages", label: "Guest Pages" },
+    { href: "/admin/aggregate", label: "Aggregate Views" },
   ];
 
   return (

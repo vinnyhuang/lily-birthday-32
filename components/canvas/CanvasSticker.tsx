@@ -13,8 +13,9 @@ import {
 interface CanvasStickerProps {
   element: CanvasStickerElement;
   isSelected: boolean;
-  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onChange: (updates: Partial<CanvasStickerElement>) => void;
+  readOnly?: boolean;
+  onSelect?: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onChange?: (updates: Partial<CanvasStickerElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
@@ -24,6 +25,7 @@ interface CanvasStickerProps {
 export function CanvasSticker({
   element,
   isSelected,
+  readOnly,
   onSelect,
   onChange,
   onDragStart,
@@ -75,7 +77,7 @@ export function CanvasSticker({
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    onChange({
+    onChange?.({
       x: e.target.x(),
       y: e.target.y(),
     });
@@ -89,11 +91,10 @@ export function CanvasSticker({
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
 
-    // Reset scale and apply to width/height
     node.scaleX(1);
     node.scaleY(1);
 
-    onChange({
+    onChange?.({
       x: node.x(),
       y: node.y(),
       width: Math.max(30, element.width * scaleX),
@@ -111,13 +112,13 @@ export function CanvasSticker({
         x={element.x}
         y={element.y}
         rotation={element.rotation}
-        draggable
-        onClick={(e) => onSelect(e)}
-        onTap={(e) => onSelect(e)}
-        onDragStart={handleDragStart}
-        onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
+        draggable={!readOnly}
+        onClick={readOnly ? undefined : (e) => onSelect?.(e)}
+        onTap={readOnly ? undefined : (e) => onSelect?.(e)}
+        onDragStart={readOnly ? undefined : handleDragStart}
+        onDragMove={readOnly ? undefined : handleDragMove}
+        onDragEnd={readOnly ? undefined : handleDragEnd}
+        onTransformEnd={readOnly ? undefined : handleTransformEnd}
       >
         <Image
           image={image}
@@ -128,7 +129,7 @@ export function CanvasSticker({
           opacity={element.opacity}
         />
       </Group>
-      {isSelected && (
+      {isSelected && !readOnly && (
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}

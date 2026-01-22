@@ -39,9 +39,10 @@ function calculateStrokesBounds(strokes: DrawingStroke[]): { minX: number; minY:
 interface CanvasDrawingProps {
   element: CanvasDrawingElement;
   isSelected: boolean;
-  isEditing: boolean; // True when in drawing mode for this element
-  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onChange: (updates: Partial<CanvasDrawingElement>) => void;
+  isEditing?: boolean; // True when in drawing mode for this element
+  readOnly?: boolean;
+  onSelect?: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onChange?: (updates: Partial<CanvasDrawingElement>) => void;
   onDragStart?: () => void;
   onDragMove?: (newX: number, newY: number) => SnapResult;
   onDragEnd?: () => void;
@@ -62,6 +63,7 @@ export function CanvasDrawing({
   element,
   isSelected,
   isEditing,
+  readOnly,
   onSelect,
   onChange,
   onDragStart,
@@ -93,7 +95,7 @@ export function CanvasDrawing({
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    onChange({
+    onChange?.({
       x: e.target.x(),
       y: e.target.y(),
     });
@@ -107,11 +109,10 @@ export function CanvasDrawing({
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
 
-    // Reset scale and apply to width/height
     node.scaleX(1);
     node.scaleY(1);
 
-    onChange({
+    onChange?.({
       x: node.x(),
       y: node.y(),
       width: Math.max(30, element.width * scaleX),
@@ -120,8 +121,8 @@ export function CanvasDrawing({
     });
   };
 
-  // When editing, disable dragging and show a subtle border
-  const isDraggable = isSelected && !isEditing;
+  // When editing or readOnly, disable dragging
+  const isDraggable = !readOnly && isSelected && !isEditing;
 
   // Calculate bounds for hit area
   const bounds = useMemo(() => calculateStrokesBounds(element.strokes), [element.strokes]);
@@ -136,8 +137,8 @@ export function CanvasDrawing({
         scaleX={element.scaleX}
         scaleY={element.scaleY}
         draggable={isDraggable}
-        onClick={(e) => !isEditing && onSelect(e)}
-        onTap={(e) => !isEditing && onSelect(e)}
+        onClick={readOnly ? undefined : (e) => !isEditing && onSelect?.(e)}
+        onTap={readOnly ? undefined : (e) => !isEditing && onSelect?.(e)}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -168,7 +169,7 @@ export function CanvasDrawing({
           />
         ))}
       </Group>
-      {isSelected && !isEditing && (
+      {isSelected && !isEditing && !readOnly && (
         <Transformer
           ref={transformerRef}
           rotateEnabled={true}
