@@ -40,7 +40,12 @@ export function CanvasToolbarPopover({
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      // Don't close if clicking on a toolbar button (let toggle logic handle it)
+      if (target.closest('[data-toolbar-button]')) {
+        return;
+      }
+      if (popoverRef.current && !popoverRef.current.contains(target)) {
         onClose();
       }
     };

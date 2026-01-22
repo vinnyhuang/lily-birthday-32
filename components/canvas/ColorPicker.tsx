@@ -67,30 +67,26 @@ export function ColorPicker({
         ))}
 
         {/* Custom color picker */}
-        <div className="relative">
+        <div className="relative group">
           <input
             type="color"
             value={value || "#000000"}
             onChange={(e) => onChange(e.target.value)}
-            className="w-6 h-6 rounded border border-gray-200 cursor-pointer opacity-0 absolute inset-0"
+            className="w-6 h-6 rounded border border-gray-200 opacity-0 absolute inset-0 z-10"
             title="Custom color"
           />
           <div
-            className={`w-6 h-6 rounded border flex items-center justify-center ${
+            className={`w-6 h-6 rounded border transition-all ${
               value && !presets.includes(value)
                 ? "ring-2 ring-primary ring-offset-1 border-primary"
-                : "border-gray-200"
+                : "border-gray-200 group-hover:border-gray-400 group-hover:scale-110"
             }`}
             style={{
               background: value && !presets.includes(value)
                 ? value
                 : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
             }}
-          >
-            {(!value || presets.includes(value)) && (
-              <span className="text-[8px] font-bold text-white drop-shadow-sm">+</span>
-            )}
-          </div>
+          />
         </div>
       </div>
     </div>

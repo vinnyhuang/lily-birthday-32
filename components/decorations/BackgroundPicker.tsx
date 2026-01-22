@@ -94,13 +94,9 @@ export function BackgroundPicker({
                     : "border-border hover:border-primary/50"
                 }`}
                 style={{
-                  backgroundColor:
-                    currentBackground.type === "color" && !isPresetColor(currentBackground.value)
-                      ? currentBackground.value
-                      : undefined,
                   background:
                     currentBackground.type === "color" && !isPresetColor(currentBackground.value)
-                      ? undefined
+                      ? currentBackground.value
                       : "conic-gradient(from 0deg, #FF6B6B, #FFE66D, #4ECDC4, #45B7D1, #96E6A1, #DDA0DD, #FF6B6B)",
                 }}
               >

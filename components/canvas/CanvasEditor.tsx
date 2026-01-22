@@ -437,6 +437,10 @@ export function CanvasEditor({
   // Handle adding a sticker
   const handleAddSticker = useCallback(
     (sticker: Sticker, src: string) => {
+      // Exit draw mode if active
+      if (isDrawingMode) {
+        handleExitDrawingMode();
+      }
       const stickerElement = createStickerElement(
         sticker.id,
         src,
@@ -446,18 +450,22 @@ export function CanvasEditor({
       );
       addElement(stickerElement);
     },
-    [addElement, canvasData.width, canvasData.height, maxZIndex]
+    [addElement, canvasData.width, canvasData.height, maxZIndex, isDrawingMode, handleExitDrawingMode]
   );
 
   // Handle adding text
   const handleAddText = useCallback(() => {
+    // Exit draw mode if active
+    if (isDrawingMode) {
+      handleExitDrawingMode();
+    }
     const textElement = createTextElement(
       "Add your text",
       { x: canvasData.width / 2 - 100, y: canvasData.height / 2 - 25 },
       maxZIndex + 1
     );
     addElement(textElement);
-  }, [addElement, canvasData.width, canvasData.height, maxZIndex]);
+  }, [addElement, canvasData.width, canvasData.height, maxZIndex, isDrawingMode, handleExitDrawingMode]);
 
   // Load image dimensions
   const loadImageDimensions = (url: string): Promise<{ width: number; height: number }> => {
@@ -494,6 +502,10 @@ export function CanvasEditor({
   // Handle adding photos/videos from gallery (supports multiple)
   const handleAddPhotos = useCallback(
     async (mediaItems: MediaItem[]) => {
+      // Exit draw mode if active
+      if (isDrawingMode) {
+        handleExitDrawingMode();
+      }
       const baseSize = Math.min(canvasData.width, canvasData.height) * 0.35;
       const padding = 40;
 
@@ -587,7 +599,7 @@ export function CanvasEditor({
       // Add all elements
       [...photoElements, ...videoElements].forEach((el) => addElement(el));
     },
-    [addElement, canvasData.width, canvasData.height, maxZIndex]
+    [addElement, canvasData.width, canvasData.height, maxZIndex, isDrawingMode, handleExitDrawingMode]
   );
 
   // Handle starting drawing mode
@@ -605,6 +617,7 @@ export function CanvasEditor({
         setActiveDrawingId(selected.id);
         setIsDrawingMode(true);
         setOpenPopover(null);
+        clearSelection();
         return;
       }
     }
@@ -617,7 +630,8 @@ export function CanvasEditor({
     setActiveDrawingId(newDrawing.id);
     setIsDrawingMode(true);
     setOpenPopover(null);
-  }, [selectedIds, currentPage.elements, maxZIndex, addElement, isDrawingMode, handleExitDrawingMode]);
+    clearSelection();
+  }, [selectedIds, currentPage.elements, maxZIndex, addElement, isDrawingMode, handleExitDrawingMode, clearSelection]);
 
   // Get pointer position relative to canvas
   const getPointerPosition = useCallback(() => {
@@ -874,8 +888,9 @@ export function CanvasEditor({
                 />
               </Layer>
 
-              {/* Content Layer */}
+              {/* Content Layer - disable listening in draw mode so events pass to Stage */}
               <Layer
+                listening={!isDrawingMode}
                 ref={(node) => {
                   // Set high quality image smoothing for better scaled image rendering
                   if (node) {
@@ -1186,6 +1201,7 @@ export function CanvasEditor({
                     size="icon"
                     className="h-10 w-10"
                     onClick={() => togglePopover(btn.id)}
+                    data-toolbar-button
                   >
                     {btn.icon}
                   </Button>

@@ -33,6 +33,11 @@ const PRESET_COLORS = [
   "#6B7280", // Gray
 ];
 
+// Check if a color is a preset
+function isPresetColor(value: string): boolean {
+  return PRESET_COLORS.some((c) => c.toLowerCase() === value.toLowerCase());
+}
+
 const brushButtons: { type: BrushType; icon: React.ReactNode; label: string }[] = [
   { type: "pen", icon: <Pencil className="h-4 w-4" />, label: "Pen" },
   { type: "marker", icon: <PenTool className="h-4 w-4" />, label: "Marker" },
@@ -105,6 +110,33 @@ export function DrawingToolbar({
                 title={color}
               />
             ))}
+            {/* Custom color picker */}
+            <div className="relative">
+              <button
+                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                  !isPresetColor(brushColor)
+                    ? "border-primary scale-110"
+                    : "border-transparent hover:border-muted-foreground/50"
+                }`}
+                style={{
+                  background: !isPresetColor(brushColor)
+                    ? brushColor
+                    : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+                }}
+                onClick={() => {
+                  const input = document.getElementById('drawing-custom-color-input') as HTMLInputElement;
+                  input?.click();
+                }}
+                title="Custom color"
+              />
+              <input
+                id="drawing-custom-color-input"
+                type="color"
+                value={brushColor}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="absolute top-full left-1/2 -translate-x-1/2 opacity-0 w-0 h-0"
+              />
+            </div>
           </div>
         </div>
 
