@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { MediaUploader } from "@/components/MediaUploader";
 import { MediaGrid } from "@/components/MediaGrid";
 import { PhotoMap } from "@/components/PhotoMap";
+import { Timeline } from "@/components/Timeline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CanvasData, MediaItem } from "@/lib/canvas/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -85,7 +86,7 @@ export default function PageBuilder() {
   );
 
   const handleUpdateMedia = useCallback(
-    async (mediaId: string, data: { caption?: string; location?: string; latitude?: number; longitude?: number }) => {
+    async (mediaId: string, data: { caption?: string; location?: string; latitude?: number; longitude?: number; dateTaken?: string | null }) => {
       try {
         const response = await fetch("/api/media", {
           method: "PATCH",
@@ -173,9 +174,9 @@ export default function PageBuilder() {
           </p>
         </div>
 
-        {/* Tabs for Photos, Canvas, and Map */}
+        {/* Tabs for Photos, Canvas, Map, and Timeline */}
         <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="photos">
               My Photos ({pageData.media.length})
             </TabsTrigger>
@@ -184,6 +185,9 @@ export default function PageBuilder() {
             </TabsTrigger>
             <TabsTrigger value="map">
               Map View
+            </TabsTrigger>
+            <TabsTrigger value="timeline">
+              Timeline
             </TabsTrigger>
           </TabsList>
 
@@ -246,6 +250,11 @@ export default function PageBuilder() {
                   longitude: m.longitude,
                 }))}
             />
+          </TabsContent>
+
+          {/* Timeline View Tab */}
+          <TabsContent value="timeline" className="mt-6">
+            <Timeline media={pageData.media} />
           </TabsContent>
         </Tabs>
       </div>

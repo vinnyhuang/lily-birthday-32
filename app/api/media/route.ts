@@ -93,6 +93,7 @@ const updateMediaSchema = z.object({
   location: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
+  dateTaken: z.string().datetime().nullable().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -107,7 +108,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { mediaId, caption, location, latitude, longitude } = parsed.data;
+    const { mediaId, caption, location, latitude, longitude, dateTaken } = parsed.data;
 
     const media = await db.media.findUnique({
       where: { id: mediaId },
@@ -124,6 +125,7 @@ export async function PATCH(request: NextRequest) {
         ...(location !== undefined && { location }),
         ...(latitude !== undefined && { latitude }),
         ...(longitude !== undefined && { longitude }),
+        ...(dateTaken !== undefined && { dateTaken: dateTaken ? new Date(dateTaken) : null }),
       },
     });
 

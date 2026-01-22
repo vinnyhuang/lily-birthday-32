@@ -71,6 +71,76 @@ export async function extractExif(file: File): Promise<ExifData> {
 }
 
 /**
+ * Extract metadata from a video file
+ * Uses exifr for MOV/MP4 metadata and file lastModified as fallback
+ */
+export async function extractVideoMetadata(file: File): Promise<ExifData> {
+  try {
+    // Try to extract metadata using exifr (works for MOV, MP4 with embedded GPS)
+    const metadata = await exifr.parse(file, {
+      gps: true,
+      exif: true,
+    });
+
+    let dateTaken: Date | null = null;
+    let gpsCoordinates: ExifData["gpsCoordinates"] = null;
+
+    if (metadata) {
+      // Try various date fields that videos might have
+      if (metadata.DateTimeOriginal) {
+        dateTaken = new Date(metadata.DateTimeOriginal);
+      } else if (metadata.CreateDate) {
+        dateTaken = new Date(metadata.CreateDate);
+      } else if (metadata.ModifyDate) {
+        dateTaken = new Date(metadata.ModifyDate);
+      }
+
+      // Extract GPS if available
+      if (metadata.latitude != null && metadata.longitude != null) {
+        let latitude = metadata.latitude;
+        let longitude = metadata.longitude;
+
+        // Apply sign corrections
+        if (metadata.GPSLatitudeRef === "S" && latitude > 0) {
+          latitude = -latitude;
+        }
+        if (metadata.GPSLongitudeRef === "W" && longitude > 0) {
+          longitude = -longitude;
+        }
+
+        console.debug("Video GPS data:", {
+          raw: { lat: metadata.latitude, lng: metadata.longitude },
+          refs: { latRef: metadata.GPSLatitudeRef, lngRef: metadata.GPSLongitudeRef },
+          corrected: { latitude, longitude },
+        });
+
+        gpsCoordinates = { latitude, longitude };
+      }
+    }
+
+    // Fall back to file's lastModified if no date was found
+    if (!dateTaken && file.lastModified) {
+      dateTaken = new Date(file.lastModified);
+      console.debug("Using file lastModified as dateTaken:", dateTaken);
+    }
+
+    return { dateTaken, gpsCoordinates };
+  } catch (error) {
+    console.debug("Video metadata extraction failed:", error);
+
+    // Fall back to file's lastModified
+    if (file.lastModified) {
+      return {
+        dateTaken: new Date(file.lastModified),
+        gpsCoordinates: null,
+      };
+    }
+
+    return { dateTaken: null, gpsCoordinates: null };
+  }
+}
+
+/**
  * Format a date for display
  */
 export function formatDateTaken(date: Date): string {

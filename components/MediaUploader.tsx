@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { extractExif, ExifData } from "@/lib/exif/extractExif";
+import { extractExif, extractVideoMetadata, ExifData } from "@/lib/exif/extractExif";
 
 interface MediaUploaderProps {
   guestId: string;
@@ -93,10 +93,12 @@ export function MediaUploader({
       }
     }
 
-    // Extract EXIF data for photos
+    // Extract metadata for photos and videos
     let exifData: ExifData | undefined;
     if (fileType === "photo") {
       exifData = await extractExif(file);
+    } else if (fileType === "video") {
+      exifData = await extractVideoMetadata(file);
     }
 
     setUploads((prev) => {

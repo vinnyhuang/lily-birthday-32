@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +12,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { LocationAutocomplete } from "@/components/upload/LocationAutocomplete";
 import { formatDateTaken } from "@/lib/exif/extractExif";
 import { getProxyUrl } from "@/lib/s3";
+import { Calendar } from "lucide-react";
 
 export interface MediaItem {
   id: string;
@@ -29,7 +36,7 @@ export interface MediaItem {
 
 interface MediaGridProps {
   media: MediaItem[];
-  onUpdate: (id: string, data: { caption?: string; location?: string; latitude?: number; longitude?: number }) => void;
+  onUpdate: (id: string, data: { caption?: string; location?: string; latitude?: number; longitude?: number; dateTaken?: string | null }) => void;
   onDelete: (id: string) => void;
 }
 
@@ -38,6 +45,8 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
   const [editCaption, setEditCaption] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editCoordinates, setEditCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [editDateTaken, setEditDateTaken] = useState<string>("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -50,16 +59,26 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
         ? { latitude: item.latitude, longitude: item.longitude }
         : null
     );
+    // Convert ISO date to YYYY-MM-DD format for date input
+    setEditDateTaken(item.dateTaken ? item.dateTaken.split("T")[0] : "");
   };
 
   const handleSave = async () => {
     if (!selectedMedia) return;
     setIsSaving(true);
+
+    // Convert date to ISO string if present
+    let dateTakenISO: string | null | undefined = undefined;
+    if (editDateTaken !== (selectedMedia.dateTaken?.split("T")[0] || "")) {
+      dateTakenISO = editDateTaken ? new Date(editDateTaken + "T12:00:00").toISOString() : null;
+    }
+
     await onUpdate(selectedMedia.id, {
       caption: editCaption || undefined,
       location: editLocation || undefined,
       latitude: editCoordinates?.latitude,
       longitude: editCoordinates?.longitude,
+      ...(dateTakenISO !== undefined && { dateTaken: dateTakenISO }),
     });
     setIsSaving(false);
     setSelectedMedia(null);
@@ -67,10 +86,15 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
 
   const handleDelete = async () => {
     if (!selectedMedia) return;
-    setIsDeleting(true);
-    await onDelete(selectedMedia.id);
-    setIsDeleting(false);
+    const mediaToDelete = selectedMedia;
+    // Close modal immediately for better UX
     setSelectedMedia(null);
+    setIsDeleting(true);
+    try {
+      await onDelete(mediaToDelete.id);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (media.length === 0) {
@@ -195,14 +219,23 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
                 )}
               </div>
 
-              {/* Date taken badge */}
-              {selectedMedia.dateTaken && (
-                <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-lg">
-                  Taken on {formatDateTaken(new Date(selectedMedia.dateTaken))}
-                </div>
-              )}
-
               <div className="space-y-3">
+                {/* Date taken field with calendar picker */}
+                <div className="space-y-2">
+                  <Label htmlFor="dateTaken">Taken on</Label>
+                  <div className="relative">
+                    <Input
+                      id="dateTaken"
+                      type="date"
+                      value={editDateTaken}
+                      onChange={(e) => setEditDateTaken(e.target.value)}
+                      className="pr-10"
+                      placeholder="Select date..."
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="caption">Caption / Story</Label>
                   <Textarea
