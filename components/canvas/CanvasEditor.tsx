@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Stage, Layer } from "react-konva";
+import { Stage, Layer, Line } from "react-konva";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import { CanvasVideo } from "./CanvasVideo";
 import { CanvasSticker } from "./CanvasSticker";
 import { CanvasText } from "./CanvasText";
+import { CanvasDrawing } from "./CanvasDrawing";
+import { DrawingToolbar } from "./DrawingToolbar";
 import { CanvasBackground } from "./CanvasBackground";
 import { AlignmentGuides } from "./AlignmentGuides";
 import { ElementOptionsPanel } from "./ElementOptionsPanel";
@@ -20,12 +22,17 @@ import {
   CanvasVideoElement,
   CanvasStickerElement,
   CanvasTextElement,
+  CanvasDrawingElement,
+  DrawingStroke,
+  BrushType,
   FrameStyle,
   FilterType,
   createStickerElement,
   createTextElement,
   createImageElement,
   createVideoElement,
+  createDrawingElement,
+  generateStrokeId,
 } from "@/lib/canvas/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,8 +59,26 @@ export function CanvasEditor({
   onSave,
 }: CanvasEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 500 });
   const [openPopover, setOpenPopover] = useState<PopoverType>(null);
+
+  // Drawing mode state
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
+  const [isCurrentlyDrawing, setIsCurrentlyDrawing] = useState(false);
+  const currentStrokeRef = useRef<{ points: number[]; id: string } | null>(null);
+
+  // Drawing tool settings
+  const [brushType, setBrushType] = useState<BrushType>("pen");
+  const [brushColor, setBrushColor] = useState("#000000");
+  const [brushSize, setBrushSize] = useState(4);
+  const [brushOpacity, setBrushOpacity] = useState(1);
+  const [isErasing, setIsErasing] = useState(false);
+  const eraserPointsRef = useRef<number[]>([]);
+
+  // Preview stroke for live drawing (not in history until complete)
+  const [previewStroke, setPreviewStroke] = useState<DrawingStroke | null>(null);
 
   // Pixel ratio for crisp rendering when browser-zooming
   // 4 = sharp at 400% zoom, good quality for trackpad pinch-zoom
@@ -313,7 +338,7 @@ export function CanvasEditor({
 
   // Wrapper for element onChange that handles multi-select
   const handleElementChange = useCallback(
-    (id: string, updates: Partial<CanvasImageElement | CanvasVideoElement | CanvasStickerElement | CanvasTextElement>) => {
+    (id: string, updates: Partial<CanvasImageElement | CanvasVideoElement | CanvasStickerElement | CanvasTextElement | CanvasDrawingElement>) => {
       const keys = Object.keys(updates);
       const isPositionOnlyUpdate = keys.every(k => k === 'x' || k === 'y');
       const isTransformUpdate = keys.some(k => k === 'width' || k === 'height' || k === 'rotation');
@@ -332,6 +357,27 @@ export function CanvasEditor({
     [selectedIds, handleMultiDragEnd, handleMultiTransformEnd, updateElement]
   );
 
+  // Handle exiting drawing mode (defined before keyboard shortcuts that use it)
+  const handleExitDrawingMode = useCallback(() => {
+    // If the active drawing has no strokes, remove it
+    if (activeDrawingId) {
+      const activeDrawing = currentPage.elements.find(
+        (el) => el.id === activeDrawingId
+      ) as CanvasDrawingElement | undefined;
+
+      if (activeDrawing && activeDrawing.strokes.length === 0) {
+        removeElement([activeDrawingId]);
+      }
+    }
+
+    setIsDrawingMode(false);
+    setActiveDrawingId(null);
+    setIsCurrentlyDrawing(false);
+    currentStrokeRef.current = null;
+    setIsErasing(false);
+    eraserPointsRef.current = [];
+  }, [activeDrawingId, currentPage.elements, removeElement]);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -340,6 +386,13 @@ export function CanvasEditor({
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
       ) {
+        return;
+      }
+
+      // Escape to exit drawing mode
+      if (e.key === "Escape" && isDrawingMode) {
+        e.preventDefault();
+        handleExitDrawingMode();
         return;
       }
 
@@ -369,7 +422,7 @@ export function CanvasEditor({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIds, removeElement, undo, redo]);
+  }, [selectedIds, removeElement, undo, redo, isDrawingMode, handleExitDrawingMode]);
 
   // Sort elements by zIndex for proper layering
   const sortedElements = [...currentPage.elements].sort(
@@ -537,6 +590,159 @@ export function CanvasEditor({
     [addElement, canvasData.width, canvasData.height, maxZIndex]
   );
 
+  // Handle starting drawing mode
+  const handleStartDrawing = useCallback(() => {
+    // If already in drawing mode, exit it
+    if (isDrawingMode) {
+      handleExitDrawingMode();
+      return;
+    }
+
+    // If a drawing is selected, edit it
+    if (selectedIds.length === 1) {
+      const selected = currentPage.elements.find((el) => el.id === selectedIds[0]);
+      if (selected?.type === "drawing") {
+        setActiveDrawingId(selected.id);
+        setIsDrawingMode(true);
+        setOpenPopover(null);
+        return;
+      }
+    }
+    // Create new drawing element
+    const newDrawing = createDrawingElement(
+      { x: 0, y: 0 }, // Position at origin, strokes are in canvas coordinates
+      maxZIndex + 1
+    );
+    addElement(newDrawing);
+    setActiveDrawingId(newDrawing.id);
+    setIsDrawingMode(true);
+    setOpenPopover(null);
+  }, [selectedIds, currentPage.elements, maxZIndex, addElement, isDrawingMode, handleExitDrawingMode]);
+
+  // Get pointer position relative to canvas
+  const getPointerPosition = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const pos = stage.getPointerPosition();
+    if (!pos) return null;
+    return { x: pos.x, y: pos.y };
+  }, []);
+
+  // Handle drawing start (mouse/touch down)
+  const handleDrawStart = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (!isDrawingMode || !activeDrawingId) return;
+
+    const pos = getPointerPosition();
+    if (!pos) return;
+
+    setIsCurrentlyDrawing(true);
+
+    if (isErasing) {
+      eraserPointsRef.current = [pos.x, pos.y];
+    } else {
+      // Start a new stroke
+      const strokeId = generateStrokeId();
+      currentStrokeRef.current = {
+        id: strokeId,
+        points: [pos.x, pos.y],
+      };
+    }
+  }, [isDrawingMode, activeDrawingId, getPointerPosition, isErasing]);
+
+  // Handle drawing move (mouse/touch move)
+  const handleDrawMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (!isDrawingMode || !activeDrawingId || !isCurrentlyDrawing) return;
+
+    const pos = getPointerPosition();
+    if (!pos) return;
+
+    if (isErasing) {
+      eraserPointsRef.current.push(pos.x, pos.y);
+    } else if (currentStrokeRef.current) {
+      // Add point to current stroke
+      currentStrokeRef.current.points.push(pos.x, pos.y);
+
+      // Update preview stroke (local state, not in history)
+      setPreviewStroke({
+        id: currentStrokeRef.current.id,
+        points: [...currentStrokeRef.current.points],
+        color: brushColor,
+        width: brushSize,
+        opacity: brushOpacity,
+        brushType: brushType,
+      });
+    }
+  }, [isDrawingMode, activeDrawingId, isCurrentlyDrawing, getPointerPosition, isErasing,
+      brushColor, brushSize, brushOpacity, brushType]);
+
+  // Handle drawing end (mouse/touch up)
+  const handleDrawEnd = useCallback(() => {
+    if (!isDrawingMode || !activeDrawingId) return;
+
+    setIsCurrentlyDrawing(false);
+
+    if (isErasing && eraserPointsRef.current.length > 0) {
+      // Perform erasing - remove strokes that intersect with eraser path
+      const activeDrawing = currentPage.elements.find(
+        (el) => el.id === activeDrawingId
+      ) as CanvasDrawingElement | undefined;
+
+      if (activeDrawing) {
+        const eraserPoints = eraserPointsRef.current;
+        const eraserRadius = brushSize * 2; // Eraser size based on brush size
+
+        // Filter out strokes that intersect with eraser path
+        const remainingStrokes = activeDrawing.strokes.filter((stroke) => {
+          // Check if any point in the stroke is close to any point in the eraser path
+          for (let i = 0; i < stroke.points.length; i += 2) {
+            const sx = stroke.points[i];
+            const sy = stroke.points[i + 1];
+
+            for (let j = 0; j < eraserPoints.length; j += 2) {
+              const ex = eraserPoints[j];
+              const ey = eraserPoints[j + 1];
+
+              const dist = Math.sqrt((sx - ex) ** 2 + (sy - ey) ** 2);
+              if (dist < eraserRadius) {
+                return false; // Remove this stroke
+              }
+            }
+          }
+          return true; // Keep this stroke
+        });
+
+        updateElement(activeDrawingId, { strokes: remainingStrokes });
+      }
+
+      eraserPointsRef.current = [];
+    } else if (currentStrokeRef.current && currentStrokeRef.current.points.length >= 2) {
+      // Complete the stroke - add it to the element (this goes to history)
+      const activeDrawing = currentPage.elements.find(
+        (el) => el.id === activeDrawingId
+      ) as CanvasDrawingElement | undefined;
+
+      if (activeDrawing) {
+        const completedStroke: DrawingStroke = {
+          id: currentStrokeRef.current.id,
+          points: [...currentStrokeRef.current.points],
+          color: brushColor,
+          width: brushSize,
+          opacity: brushOpacity,
+          brushType: brushType,
+        };
+
+        updateElement(activeDrawingId, {
+          strokes: [...activeDrawing.strokes, completedStroke],
+        });
+      }
+
+      currentStrokeRef.current = null;
+    }
+
+    // Clear preview stroke
+    setPreviewStroke(null);
+  }, [isDrawingMode, activeDrawingId, isErasing, currentPage.elements, brushSize, brushColor, brushOpacity, brushType, updateElement]);
+
   // Get media IDs currently on canvas (both images and videos, current page only)
   const onCanvasMediaIds = currentPage.elements
     .filter((el): el is CanvasImageElement | CanvasVideoElement =>
@@ -644,11 +850,20 @@ export function CanvasEditor({
               }}
             >
               <Stage
+                ref={stageRef}
                 width={canvasData.width}
                 height={canvasData.height}
                 pixelRatio={pixelRatio}
-                onClick={handleStageClick}
-                onTap={handleStageClick}
+                onClick={isDrawingMode ? undefined : handleStageClick}
+                onTap={isDrawingMode ? undefined : handleStageClick}
+                onMouseDown={isDrawingMode ? handleDrawStart : undefined}
+                onMouseMove={isDrawingMode ? handleDrawMove : undefined}
+                onMouseUp={isDrawingMode ? handleDrawEnd : undefined}
+                onMouseLeave={isDrawingMode ? handleDrawEnd : undefined}
+                onTouchStart={isDrawingMode ? handleDrawStart : undefined}
+                onTouchMove={isDrawingMode ? handleDrawMove : undefined}
+                onTouchEnd={isDrawingMode ? handleDrawEnd : undefined}
+                style={{ cursor: isDrawingMode ? (isErasing ? 'crosshair' : 'crosshair') : 'default' }}
               >
               {/* Background Layer - listening disabled for performance */}
               <Layer listening={false}>
@@ -774,8 +989,44 @@ export function CanvasEditor({
                       />
                     );
                   }
+                  if (element.type === "drawing") {
+                    return (
+                      <CanvasDrawing
+                        key={element.id}
+                        element={transformedElement as CanvasDrawingElement}
+                        isSelected={selectedIds.includes(element.id)}
+                        isEditing={isDrawingMode && activeDrawingId === element.id}
+                        onSelect={(e) => handleElementSelect(element.id, e)}
+                        onChange={(updates) => handleElementChange(element.id, updates)}
+                        onDragStart={() => {
+                          handleMultiDragStart(element.id);
+                          onGuideDragStart(element.id);
+                        }}
+                        onDragMove={(newX, newY) => {
+                          handleMultiDragMove(element.id, newX, newY);
+                          return onGuideDragMove(element, newX, newY);
+                        }}
+                        onDragEnd={onGuideDragEnd}
+                        onTransform={(scaleX, scaleY) => handleMultiTransform(element.id, scaleX, scaleY)}
+                      />
+                    );
+                  }
                   return null;
                 })}
+
+                {/* Preview stroke while drawing (before it's committed to history) */}
+                {previewStroke && isDrawingMode && (
+                  <Line
+                    points={previewStroke.points}
+                    stroke={previewStroke.color}
+                    strokeWidth={previewStroke.width}
+                    opacity={previewStroke.opacity}
+                    lineCap={previewStroke.brushType === "marker" ? "square" : "round"}
+                    lineJoin="round"
+                    tension={previewStroke.brushType === "marker" ? 0.3 : 0.5}
+                    listening={false}
+                  />
+                )}
 
                 {/* Alignment Guides */}
                 <AlignmentGuides guides={guides} />
@@ -803,6 +1054,23 @@ export function CanvasEditor({
               media={media}
               onCanvasMediaIds={onCanvasMediaIds}
             />
+
+            {/* Drawing Toolbar - shown when in drawing mode, hidden while actively drawing */}
+            {isDrawingMode && !isCurrentlyDrawing && (
+              <DrawingToolbar
+                brushType={brushType}
+                brushColor={brushColor}
+                brushSize={brushSize}
+                brushOpacity={brushOpacity}
+                isErasing={isErasing}
+                onBrushTypeChange={setBrushType}
+                onColorChange={setBrushColor}
+                onSizeChange={setBrushSize}
+                onOpacityChange={setBrushOpacity}
+                onEraserToggle={() => setIsErasing(!isErasing)}
+                onDone={handleExitDrawingMode}
+              />
+            )}
           </div>
 
           {/* Element Options Panel - absolutely positioned to the right of canvas */}
@@ -908,7 +1176,7 @@ export function CanvasEditor({
           )}
 
           {/* Left Toolbar - absolutely positioned to the left of canvas */}
-          <div className="absolute top-0 bottom-0 right-full mr-3 flex flex-col gap-1 pt-1" style={{ width: toolbarWidth }}>
+          <div className="absolute top-0 bottom-0 right-full mr-3 flex flex-col pt-1" style={{ width: toolbarWidth }}>
             {/* Content buttons */}
             {toolbarButtons.map((btn) => (
               <Tooltip key={btn.id}>
@@ -927,6 +1195,26 @@ export function CanvasEditor({
                 </TooltipContent>
               </Tooltip>
             ))}
+
+            {/* Draw button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isDrawingMode ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-10 w-10"
+                  onClick={handleStartDrawing}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+                    <path d="m15 5 4 4"/>
+                  </svg>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Draw</p>
+              </TooltipContent>
+            </Tooltip>
 
             <div className="h-px bg-border my-1" />
 

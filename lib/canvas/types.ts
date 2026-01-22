@@ -133,12 +133,32 @@ export interface CanvasTextElement extends CanvasElementBase {
   backgroundCornerRadius?: number;
 }
 
+// Brush types for drawing
+export type BrushType = "pen" | "marker";
+
+// Single stroke within a drawing
+export interface DrawingStroke {
+  id: string;
+  points: number[]; // Flattened [x1, y1, x2, y2, ...] for Konva.Line
+  color: string;
+  width: number;
+  opacity: number;
+  brushType: BrushType;
+}
+
+// Drawing element (a layer containing multiple strokes)
+export interface CanvasDrawingElement extends CanvasElementBase {
+  type: "drawing";
+  strokes: DrawingStroke[];
+}
+
 // Union type for all canvas elements
 export type CanvasElement =
   | CanvasImageElement
   | CanvasVideoElement
   | CanvasStickerElement
-  | CanvasTextElement;
+  | CanvasTextElement
+  | CanvasDrawingElement;
 
 // Background configuration
 export interface CanvasBackground {
@@ -369,5 +389,30 @@ export function createTextElement(
     // Alignment
     align: "center",
   };
+}
+
+// Create a drawing element
+export function createDrawingElement(
+  position: { x: number; y: number },
+  zIndex: number
+): CanvasDrawingElement {
+  return {
+    id: `drawing-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    type: "drawing",
+    x: position.x,
+    y: position.y,
+    width: 100,
+    height: 100,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    zIndex,
+    strokes: [],
+  };
+}
+
+// Generate a unique stroke ID
+export function generateStrokeId(): string {
+  return `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 

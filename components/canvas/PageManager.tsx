@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CanvasPage, CanvasBackground, DEFAULT_PAGE_BACKGROUND } from "@/lib/canvas/types";
-import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Image, Type, Sticker, X } from "lucide-react";
+import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Image, Type, Sticker, Pencil, X } from "lucide-react";
 import { textures } from "@/lib/canvas/textures";
 
 interface PageManagerProps {
@@ -74,6 +74,7 @@ function countElements(page: CanvasPage) {
   let media = 0;
   let text = 0;
   let stickers = 0;
+  let drawings = 0;
 
   for (const el of page.elements) {
     if (el.type === "image" || el.type === "video") {
@@ -82,10 +83,12 @@ function countElements(page: CanvasPage) {
       text++;
     } else if (el.type === "sticker") {
       stickers++;
+    } else if (el.type === "drawing") {
+      drawings++;
     }
   }
 
-  return { media, text, stickers, total: page.elements.length };
+  return { media, text, stickers, drawings, total: page.elements.length };
 }
 
 export function PageManager({
@@ -194,6 +197,12 @@ export function PageManager({
                       <span className="flex items-center gap-0.5">
                         <Sticker className="h-3 w-3" />
                         {counts.stickers}
+                      </span>
+                    )}
+                    {counts.drawings > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <Pencil className="h-3 w-3" />
+                        {counts.drawings}
                       </span>
                     )}
                     {counts.total === 0 && (
