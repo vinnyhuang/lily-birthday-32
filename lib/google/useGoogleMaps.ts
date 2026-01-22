@@ -16,22 +16,16 @@ declare global {
  * Ensures the script is only loaded once across all components
  */
 export function useGoogleMaps() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const [isLoaded, setIsLoaded] = useState(
+    () => typeof window !== "undefined" && !!window.google?.maps
+  );
+  const [error, setError] = useState<string | null>(
+    !apiKey ? "Google Maps API key not configured" : null
+  );
 
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-      setError("Google Maps API key not configured");
-      return;
-    }
-
-    // Already loaded
-    if (window.google?.maps) {
-      setIsLoaded(true);
-      return;
-    }
+    if (!apiKey || isLoaded) return;
 
     // Already loading - wait for it
     if (window.__googleMapsLoading) {
@@ -68,7 +62,7 @@ export function useGoogleMaps() {
     return () => {
       // Don't remove the script - other components may need it
     };
-  }, []);
+  }, [apiKey, isLoaded]);
 
   return { isLoaded, error };
 }

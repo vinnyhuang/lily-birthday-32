@@ -78,10 +78,13 @@ export function TourProvider({ children, setActiveTab }: TourProviderProps) {
     }
   }, [step]);
 
-  // Update rect when step changes
+  // Update rect when step changes (deferred to next frame for accurate DOM measurements)
   useEffect(() => {
     if (!isActive) return;
-    updateTargetRect();
+    const frameId = requestAnimationFrame(() => {
+      updateTargetRect();
+    });
+    return () => cancelAnimationFrame(frameId);
   }, [isActive, currentStep, updateTargetRect]);
 
   // Listen for window resize and scroll to reposition

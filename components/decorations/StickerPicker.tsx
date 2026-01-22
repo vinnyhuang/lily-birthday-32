@@ -37,7 +37,7 @@ export function StickerPicker({ onSelect }: StickerPickerProps) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [selectedGroup]);
 
   // Update emojis when group changes
   useEffect(() => {

@@ -12,13 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { LocationAutocomplete } from "@/components/upload/LocationAutocomplete";
-import { formatDateTaken } from "@/lib/exif/extractExif";
 import { getProxyUrl, getThumbnailS3Key } from "@/lib/s3";
 import { Calendar } from "lucide-react";
 
@@ -46,7 +40,6 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
   const [editLocation, setEditLocation] = useState("");
   const [editCoordinates, setEditCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [editDateTaken, setEditDateTaken] = useState<string>("");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);

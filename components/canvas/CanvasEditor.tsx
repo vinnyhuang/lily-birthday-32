@@ -14,7 +14,6 @@ import { AlignmentGuides } from "./AlignmentGuides";
 import { ElementOptionsPanel } from "./ElementOptionsPanel";
 import { SpiralBinding } from "./SpiralBinding";
 import { useCanvasState } from "./useCanvasState";
-import { useAlignmentGuides } from "./useAlignmentGuides";
 import {
   CanvasData,
   MediaItem,
@@ -132,7 +131,6 @@ export function CanvasEditor({
     setBackground,
     bringToFront,
     sendToBack,
-    applyLayout,
     undo,
     redo,
     goToPage,
@@ -159,6 +157,7 @@ export function CanvasEditor({
 
   // No-op functions while alignment is disabled
   const guides: never[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onGuideDragStart = (_id: string) => {};
   const onGuideDragMove = (_element: unknown, newX: number, newY: number) => ({ x: newX, y: newY, guides: [] });
   const onGuideDragEnd = () => {};
@@ -643,7 +642,7 @@ export function CanvasEditor({
   }, []);
 
   // Handle drawing start (mouse/touch down)
-  const handleDrawStart = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handleDrawStart = useCallback(() => {
     if (!isDrawingMode || !activeDrawingId) return;
 
     const pos = getPointerPosition();
@@ -664,7 +663,7 @@ export function CanvasEditor({
   }, [isDrawingMode, activeDrawingId, getPointerPosition, isErasing]);
 
   // Handle drawing move (mouse/touch move)
-  const handleDrawMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handleDrawMove = useCallback(() => {
     if (!isDrawingMode || !activeDrawingId || !isCurrentlyDrawing) return;
 
     const pos = getPointerPosition();
@@ -763,15 +762,6 @@ export function CanvasEditor({
       el.type === "image" || el.type === "video"
     )
     .map((el) => el.mediaId);
-
-  // Format last saved time
-  const formatLastSaved = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    if (diff < 60000) return "just now";
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
 
   // Toggle popover for a specific type
   const togglePopover = (type: PopoverType) => {

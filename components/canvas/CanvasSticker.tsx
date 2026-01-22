@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable jsx-a11y/alt-text */ // Konva Image is a canvas component, not an HTML img
 
 import { useRef, useEffect, useMemo } from "react";
 import { Image, Transformer, Group } from "react-konva";

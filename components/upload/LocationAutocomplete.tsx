@@ -20,9 +20,11 @@ export function LocationAutocomplete({
   const justSelectedFromAutocomplete = useRef(false);
   const { isLoaded } = useGoogleMaps();
 
-  // Memoize onChange to prevent effect re-runs
+  // Keep onChange ref in sync with latest prop
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   // Initialize Google Places Autocomplete when API is loaded
   useEffect(() => {

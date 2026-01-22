@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CanvasPage, CanvasBackground, DEFAULT_PAGE_BACKGROUND } from "@/lib/canvas/types";
-import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Image, Type, Sticker, Pencil, X } from "lucide-react";
+import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Image as ImageIcon, Type, Sticker, Pencil, X } from "lucide-react";
 import { textures } from "@/lib/canvas/textures";
 
 interface PageManagerProps {
@@ -183,7 +183,7 @@ export function PageManager({
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                     {counts.media > 0 && (
                       <span className="flex items-center gap-0.5">
-                        <Image className="h-3 w-3" />
+                        <ImageIcon className="h-3 w-3" />
                         {counts.media}
                       </span>
                     )}

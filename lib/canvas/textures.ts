@@ -9,25 +9,6 @@ export interface TextureDefinition {
   tileSize: number; // Size of the tile in pixels
 }
 
-// SVG pattern generators
-function createNoisePattern(baseColor: string, noiseColor: string, opacity: number = 0.05): string {
-  // Creates a subtle paper grain effect
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-      <rect width="100" height="100" fill="${baseColor}"/>
-      <filter id="noise">
-        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" result="noise"/>
-        <feColorMatrix type="saturate" values="0"/>
-        <feComponentTransfer>
-          <feFuncA type="linear" slope="${opacity * 2}"/>
-        </feComponentTransfer>
-        <feBlend in="SourceGraphic" mode="multiply"/>
-      </filter>
-      <rect width="100" height="100" filter="url(#noise)" fill="${noiseColor}"/>
-    </svg>
-  `.trim().replace(/\s+/g, ' ');
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
 
 function createDotsPattern(bgColor: string, dotColor: string, dotSize: number = 2, spacing: number = 12): string {
   const svg = `

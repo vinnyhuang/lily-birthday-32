@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   WashiTape,
   washiTapes,
@@ -13,17 +13,14 @@ interface WashiTapePickerProps {
 }
 
 export function WashiTapePicker({ onSelect }: WashiTapePickerProps) {
-  const [previews, setPreviews] = useState<Record<string, string>>({});
-  const { solid, patterned } = getWashiTapesByPattern();
-
-  // Generate previews on mount
-  useEffect(() => {
-    const newPreviews: Record<string, string> = {};
+  const [previews] = useState(() => {
+    const generated: Record<string, string> = {};
     washiTapes.forEach((tape) => {
-      newPreviews[tape.id] = generateWashiTapeDataUrl(tape, 80, 24);
+      generated[tape.id] = generateWashiTapeDataUrl(tape, 80, 24);
     });
-    setPreviews(newPreviews);
-  }, []);
+    return generated;
+  });
+  const { solid, patterned } = getWashiTapesByPattern();
 
   const handleSelect = (tape: WashiTape) => {
     const dataUrl = generateWashiTapeDataUrl(tape, 120, 30);

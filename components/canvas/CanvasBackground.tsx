@@ -19,15 +19,12 @@ export function CanvasBackground({
   const [textureImage, setTextureImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    if (background.type === "texture") {
-      const texture = getTextureById(background.value);
-      if (texture) {
-        loadTextureImage(texture).then(setTextureImage).catch(() => {
-          setTextureImage(null);
-        });
-      }
-    } else {
-      setTextureImage(null);
+    if (background.type !== "texture") return;
+    const texture = getTextureById(background.value);
+    if (texture) {
+      loadTextureImage(texture).then(setTextureImage).catch(() => {
+        setTextureImage(null);
+      });
     }
   }, [background.type, background.value]);
 
@@ -43,9 +40,6 @@ export function CanvasBackground({
       />
     );
   }
-
-  // Texture background
-  const texture = getTextureById(background.value);
 
   return (
     <Rect

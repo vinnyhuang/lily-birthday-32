@@ -118,7 +118,6 @@ function drawContainerShape(
       // Top edge
       ctx.moveTo(0, depth);
       for (let i = 0; i < scallops; i++) {
-        const x1 = i * scallopWidth;
         const x2 = (i + 0.5) * scallopWidth;
         const x3 = (i + 1) * scallopWidth;
         ctx.quadraticCurveTo(x2, -depth, x3, depth);
@@ -126,7 +125,6 @@ function drawContainerShape(
 
       // Right edge
       for (let i = 0; i < scallopsV; i++) {
-        const y1 = i * scallopHeight + depth;
         const y2 = (i + 0.5) * scallopHeight + depth;
         const y3 = (i + 1) * scallopHeight + depth;
         ctx.quadraticCurveTo(width + depth, y2, width, y3);
@@ -134,7 +132,6 @@ function drawContainerShape(
 
       // Bottom edge (right to left)
       for (let i = scallops - 1; i >= 0; i--) {
-        const x1 = (i + 1) * scallopWidth;
         const x2 = (i + 0.5) * scallopWidth;
         const x3 = i * scallopWidth;
         ctx.quadraticCurveTo(x2, height + depth, x3, height - depth);
@@ -142,7 +139,6 @@ function drawContainerShape(
 
       // Left edge (bottom to top)
       for (let i = scallopsV - 1; i >= 0; i--) {
-        const y1 = (i + 1) * scallopHeight + depth;
         const y2 = (i + 0.5) * scallopHeight + depth;
         const y3 = i * scallopHeight + depth;
         ctx.quadraticCurveTo(-depth, y2, 0, y3);

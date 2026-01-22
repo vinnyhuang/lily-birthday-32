@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable jsx-a11y/alt-text */ // Konva Image is a canvas component, not an HTML img
 
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { Image, Transformer, Group, Rect, Text } from "react-konva";
@@ -99,11 +100,11 @@ export function CanvasVideo({
   const [thumbnailImage] = useImage(thumbnailUrl, "anonymous");
 
   // Animation loop to update canvas when video is playing
-  const animate = useCallback(() => {
+  const animate = useCallback(function loop() {
     const node = imageRef.current;
     if (node && videoRef.current && !videoRef.current.paused) {
       node.getLayer()?.batchDraw();
-      animationRef.current = requestAnimationFrame(animate);
+      animationRef.current = requestAnimationFrame(loop);
     }
   }, []);
 

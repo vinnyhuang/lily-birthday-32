@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect, useMemo } from "react";
 import { Stage, Layer } from "react-konva";
-import Konva from "konva";
 import { CanvasPage, CanvasElement } from "@/lib/canvas/types";
 import { CanvasImage } from "./CanvasImage";
 import { CanvasVideo } from "./CanvasVideo";
@@ -21,11 +20,6 @@ interface CanvasViewerProps {
 export function CanvasViewer({ page, canvasWidth, canvasHeight }: CanvasViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(800);
-
-  // Set global Konva pixel ratio
-  if (typeof window !== "undefined") {
-    Konva.pixelRatio = 2;
-  }
 
   // Responsive container sizing
   useEffect(() => {
