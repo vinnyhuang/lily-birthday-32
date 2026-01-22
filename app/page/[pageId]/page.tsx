@@ -181,7 +181,7 @@ export default function PageBuilder() {
               My Photos ({pageData.media.length})
             </TabsTrigger>
             <TabsTrigger value="canvas">
-              Scrapbook Page
+              Scrapbook Pages
             </TabsTrigger>
             <TabsTrigger value="map">
               Map View

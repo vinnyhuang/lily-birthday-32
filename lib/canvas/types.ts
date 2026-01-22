@@ -146,8 +146,24 @@ export interface CanvasBackground {
   value: string; // hex color or texture ID
 }
 
+// Single page within a scrapbook
+export interface CanvasPage {
+  id: string;
+  background: CanvasBackground;
+  elements: CanvasElement[];
+}
+
 // Complete canvas state (stored in Page.canvasData)
+// Supports multi-page format (version 2+) with backwards compat for single-page (version 1)
 export interface CanvasData {
+  version: number;
+  width: number;
+  height: number;
+  pages: CanvasPage[];
+}
+
+// Legacy single-page format (for backwards compatibility)
+export interface LegacyCanvasData {
   version: number;
   width: number;
   height: number;
@@ -187,17 +203,58 @@ export interface MediaItem {
 export const DEFAULT_CANVAS_WIDTH = 1600;
 export const DEFAULT_CANVAS_HEIGHT = 900;
 
-// Create a new canvas data object
+// Default background for new pages
+export const DEFAULT_PAGE_BACKGROUND: CanvasBackground = {
+  type: "color",
+  value: "#FFF8F0", // Warm cream from theme
+};
+
+// Generate a unique page ID
+export function generatePageId(): string {
+  return `page-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+// Create a new empty page
+export function createDefaultPage(): CanvasPage {
+  return {
+    id: generatePageId(),
+    background: { ...DEFAULT_PAGE_BACKGROUND },
+    elements: [],
+  };
+}
+
+// Create a new canvas data object (multi-page format)
 export function createDefaultCanvasData(): CanvasData {
   return {
-    version: 1,
+    version: 2,
     width: DEFAULT_CANVAS_WIDTH,
     height: DEFAULT_CANVAS_HEIGHT,
-    background: {
-      type: "color",
-      value: "#FFF8F0", // Warm cream from theme
-    },
-    elements: [],
+    pages: [createDefaultPage()],
+  };
+}
+
+// Normalize canvas data to multi-page format (handles legacy single-page format)
+export function normalizeCanvasData(data: CanvasData | LegacyCanvasData | null): CanvasData {
+  if (!data) {
+    return createDefaultCanvasData();
+  }
+
+  // Check if already in new multi-page format
+  if ('pages' in data && Array.isArray(data.pages)) {
+    return data as CanvasData;
+  }
+
+  // Legacy format: convert to multi-page
+  const legacyData = data as LegacyCanvasData;
+  return {
+    version: 2,
+    width: legacyData.width || DEFAULT_CANVAS_WIDTH,
+    height: legacyData.height || DEFAULT_CANVAS_HEIGHT,
+    pages: [{
+      id: generatePageId(),
+      background: legacyData.background || { ...DEFAULT_PAGE_BACKGROUND },
+      elements: legacyData.elements || [],
+    }],
   };
 }
 

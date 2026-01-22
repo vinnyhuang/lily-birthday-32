@@ -35,6 +35,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CanvasToolbarPopover, PopoverType } from "./CanvasToolbarPopover";
+import { PageNavigation } from "./PageNavigation";
+import { PageManager } from "./PageManager";
 import type { Sticker } from "@/components/decorations/stickers";
 
 interface CanvasEditorProps {
@@ -85,6 +87,9 @@ export function CanvasEditor({
 
   const {
     canvasData,
+    currentPage,
+    currentPageIndex,
+    totalPages,
     selectedIds,
     selectedElements,
     isSaving,
@@ -105,6 +110,10 @@ export function CanvasEditor({
     applyLayout,
     undo,
     redo,
+    goToPage,
+    addPage,
+    deletePage,
+    reorderPage,
   } = useCanvasState({
     initialData: initialCanvasData,
     media,
@@ -198,7 +207,7 @@ export function CanvasEditor({
 
   // Handle multi-select drag start - record starting position and transform state
   const handleMultiDragStart = useCallback((id: string) => {
-    const element = canvasData.elements.find((el) => el.id === id);
+    const element = currentPage.elements.find((el) => el.id === id);
     if (element) {
       dragStartRef.current = { id, x: element.x, y: element.y };
       transformStartRef.current = {
@@ -212,7 +221,7 @@ export function CanvasEditor({
         setMultiSelectOffset({ deltaX: 0, deltaY: 0, scaleX: 1, scaleY: 1, activeId: id });
       }
     }
-  }, [canvasData.elements, selectedIds]);
+  }, [currentPage.elements, selectedIds]);
 
   // Handle live drag move for multi-select preview
   const handleMultiDragMove = useCallback((id: string, currentX: number, currentY: number) => {
@@ -263,7 +272,7 @@ export function CanvasEditor({
       setMultiSelectOffset({ deltaX: 0, deltaY: 0, scaleX: 1, scaleY: 1, activeId: null });
 
       // Get the original element from canvas state to calculate scale factors
-      const originalElement = canvasData.elements.find((el) => el.id === id);
+      const originalElement = currentPage.elements.find((el) => el.id === id);
 
       // If this element is part of a multi-selection
       if (originalElement && selectedIds.length > 1 && selectedIds.includes(id)) {
@@ -282,7 +291,7 @@ export function CanvasEditor({
         // Then scale/rotate other selected elements
         if (otherSelectedIds.length > 0) {
           otherSelectedIds.forEach((otherId) => {
-            const otherElement = canvasData.elements.find((el) => el.id === otherId);
+            const otherElement = currentPage.elements.find((el) => el.id === otherId);
             if (otherElement) {
               updateElement(otherId, {
                 width: otherElement.width * scaleX,
@@ -299,7 +308,7 @@ export function CanvasEditor({
 
       transformStartRef.current = null;
     },
-    [selectedIds, canvasData.elements, updateElement]
+    [selectedIds, currentPage.elements, updateElement]
   );
 
   // Wrapper for element onChange that handles multi-select
@@ -363,13 +372,13 @@ export function CanvasEditor({
   }, [selectedIds, removeElement, undo, redo]);
 
   // Sort elements by zIndex for proper layering
-  const sortedElements = [...canvasData.elements].sort(
+  const sortedElements = [...currentPage.elements].sort(
     (a, b) => a.zIndex - b.zIndex
   );
 
   // Get max zIndex for new elements
-  const maxZIndex = canvasData.elements.length > 0
-    ? Math.max(...canvasData.elements.map((el) => el.zIndex))
+  const maxZIndex = currentPage.elements.length > 0
+    ? Math.max(...currentPage.elements.map((el) => el.zIndex))
     : 0;
 
   // Handle adding a sticker
@@ -528,8 +537,8 @@ export function CanvasEditor({
     [addElement, canvasData.width, canvasData.height, maxZIndex]
   );
 
-  // Get media IDs currently on canvas (both images and videos)
-  const onCanvasMediaIds = canvasData.elements
+  // Get media IDs currently on canvas (both images and videos, current page only)
+  const onCanvasMediaIds = currentPage.elements
     .filter((el): el is CanvasImageElement | CanvasVideoElement =>
       el.type === "image" || el.type === "video"
     )
@@ -644,7 +653,7 @@ export function CanvasEditor({
               {/* Background Layer - listening disabled for performance */}
               <Layer listening={false}>
                 <CanvasBackground
-                  background={canvasData.background}
+                  background={currentPage.background}
                   width={canvasData.width}
                   height={canvasData.height}
                 />
@@ -790,7 +799,7 @@ export function CanvasEditor({
               onChangeBackground={setBackground}
               onAddText={handleAddText}
               onAddPhotos={handleAddPhotos}
-              currentBackground={canvasData.background}
+              currentBackground={currentPage.background}
               media={media}
               onCanvasMediaIds={onCanvasMediaIds}
             />
@@ -1040,6 +1049,26 @@ export function CanvasEditor({
                 <p>Redo</p>
               </TooltipContent>
             </Tooltip>
+
+            <div className="h-px bg-border my-1" />
+
+            {/* Page Navigation */}
+            <PageNavigation
+              currentPage={currentPageIndex + 1}
+              totalPages={totalPages}
+              onPrevious={() => goToPage(currentPageIndex - 1)}
+              onNext={() => goToPage(currentPageIndex + 1)}
+            />
+
+            {/* Page Manager */}
+            <PageManager
+              pages={canvasData.pages}
+              currentPageIndex={currentPageIndex}
+              onAddPage={addPage}
+              onDeletePage={deletePage}
+              onReorderPage={reorderPage}
+              onSelectPage={goToPage}
+            />
 
             {/* Spacer to push saved indicator to bottom */}
             <div className="flex-1" />

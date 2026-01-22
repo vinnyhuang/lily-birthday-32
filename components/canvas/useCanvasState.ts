@@ -5,8 +5,12 @@ import {
   CanvasData,
   CanvasElement,
   CanvasImageElement,
+  CanvasPage,
+  CanvasBackground,
   MediaItem,
   createDefaultCanvasData,
+  createDefaultPage,
+  normalizeCanvasData,
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_CANVAS_HEIGHT,
 } from "@/lib/canvas/types";
@@ -24,6 +28,7 @@ interface UseCanvasStateOptions {
 // to maintain aspect ratios. This avoids the distortion issue with square placeholders.
 
 // Helper to refresh image URLs, remove deleted media, and migrate canvas dimensions
+// Works with multi-page canvas data
 function refreshCanvasUrls(
   canvasData: CanvasData,
   media: MediaItem[]
@@ -39,46 +44,55 @@ function refreshCanvasUrls(
   const scaleX = needsDimensionMigration ? DEFAULT_CANVAS_WIDTH / canvasData.width : 1;
   const scaleY = needsDimensionMigration ? DEFAULT_CANVAS_HEIGHT / canvasData.height : 1;
 
-  const refreshedElements = canvasData.elements
-    .map((el) => {
-      if (el.type === "image") {
-        const imageEl = el as CanvasImageElement;
-        const freshUrl = urlMap.get(imageEl.mediaId);
-        if (!freshUrl) {
-          return null;
+  // Helper to refresh elements in a page
+  const refreshPageElements = (elements: CanvasElement[]): CanvasElement[] => {
+    return elements
+      .map((el) => {
+        if (el.type === "image") {
+          const imageEl = el as CanvasImageElement;
+          const freshUrl = urlMap.get(imageEl.mediaId);
+          if (!freshUrl) {
+            return null;
+          }
+          // Migrate position if dimensions changed
+          if (needsDimensionMigration) {
+            return {
+              ...imageEl,
+              src: freshUrl,
+              x: imageEl.x * scaleX,
+              y: imageEl.y * scaleY,
+              width: imageEl.width * scaleX,
+              height: imageEl.height * scaleY,
+            };
+          }
+          return { ...imageEl, src: freshUrl };
         }
-        // Migrate position if dimensions changed
+        // Migrate other elements too
         if (needsDimensionMigration) {
           return {
-            ...imageEl,
-            src: freshUrl,
-            x: imageEl.x * scaleX,
-            y: imageEl.y * scaleY,
-            width: imageEl.width * scaleX,
-            height: imageEl.height * scaleY,
+            ...el,
+            x: el.x * scaleX,
+            y: el.y * scaleY,
+            width: el.width * scaleX,
+            height: el.height * scaleY,
           };
         }
-        return { ...imageEl, src: freshUrl };
-      }
-      // Migrate other elements too
-      if (needsDimensionMigration) {
-        return {
-          ...el,
-          x: el.x * scaleX,
-          y: el.y * scaleY,
-          width: el.width * scaleX,
-          height: el.height * scaleY,
-        };
-      }
-      return el;
-    })
-    .filter((el): el is CanvasElement => el !== null);
+        return el;
+      })
+      .filter((el): el is CanvasElement => el !== null);
+  };
+
+  // Refresh all pages
+  const refreshedPages = canvasData.pages.map((page) => ({
+    ...page,
+    elements: refreshPageElements(page.elements),
+  }));
 
   return {
     ...canvasData,
     width: DEFAULT_CANVAS_WIDTH,
     height: DEFAULT_CANVAS_HEIGHT,
-    elements: refreshedElements,
+    pages: refreshedPages,
   };
 }
 
@@ -94,17 +108,15 @@ export function useCanvasState({
   autoSaveDelay = 1500,
   maxHistorySize = 50,
 }: UseCanvasStateOptions) {
-  // Initialize canvas data
+  // Initialize canvas data (handles legacy single-page format)
   const getInitialCanvas = useCallback(() => {
-    if (initialData) {
-      return refreshCanvasUrls(initialData, media);
-    }
-    // Start with empty canvas - users add photos via "Add Content" button
-    // This ensures proper aspect ratios are loaded
-    return createDefaultCanvasData();
+    // normalizeCanvasData handles null, legacy format, and new format
+    const normalized = normalizeCanvasData(initialData);
+    return refreshCanvasUrls(normalized, media);
   }, [initialData, media]);
 
   const [canvasData, setCanvasData] = useState<CanvasData>(getInitialCanvas);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -275,122 +287,175 @@ export function useCanvasState({
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  // Update element position/transform
+  // Update element position/transform (on current page)
   const updateElement = useCallback(
     (id: string, updates: Partial<CanvasElement>) => {
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        elements: prev.elements.map((el) =>
-          el.id === id ? ({ ...el, ...updates } as CanvasElement) : el
+        pages: prev.pages.map((page, i) =>
+          i === currentPageIndex
+            ? {
+                ...page,
+                elements: page.elements.map((el) =>
+                  el.id === id ? ({ ...el, ...updates } as CanvasElement) : el
+                ),
+              }
+            : page
         ),
       }));
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Update multiple elements at once (for multi-select)
+  // Update multiple elements at once (for multi-select, on current page)
   const updateElements = useCallback(
     (ids: string[], updates: Partial<CanvasElement>) => {
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        elements: prev.elements.map((el) =>
-          ids.includes(el.id) ? ({ ...el, ...updates } as CanvasElement) : el
+        pages: prev.pages.map((page, i) =>
+          i === currentPageIndex
+            ? {
+                ...page,
+                elements: page.elements.map((el) =>
+                  ids.includes(el.id) ? ({ ...el, ...updates } as CanvasElement) : el
+                ),
+              }
+            : page
         ),
       }));
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Translate multiple elements by delta (for multi-select drag)
+  // Translate multiple elements by delta (for multi-select drag, on current page)
   const translateElements = useCallback(
     (ids: string[], deltaX: number, deltaY: number) => {
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        elements: prev.elements.map((el) =>
-          ids.includes(el.id)
-            ? ({ ...el, x: el.x + deltaX, y: el.y + deltaY } as CanvasElement)
-            : el
+        pages: prev.pages.map((page, i) =>
+          i === currentPageIndex
+            ? {
+                ...page,
+                elements: page.elements.map((el) =>
+                  ids.includes(el.id)
+                    ? ({ ...el, x: el.x + deltaX, y: el.y + deltaY } as CanvasElement)
+                    : el
+                ),
+              }
+            : page
         ),
       }));
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Add a new element
+  // Add a new element (to current page)
   const addElement = useCallback(
     (element: CanvasElement) => {
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        elements: [...prev.elements, element],
+        pages: prev.pages.map((page, i) =>
+          i === currentPageIndex
+            ? { ...page, elements: [...page.elements, element] }
+            : page
+        ),
       }));
       setSelectedIds([element.id]);
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Remove element(s) - supports single id or array of ids
+  // Remove element(s) - supports single id or array of ids (from current page)
   const removeElement = useCallback(
     (ids: string | string[]) => {
       const idsToRemove = Array.isArray(ids) ? ids : [ids];
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        elements: prev.elements.filter((el) => !idsToRemove.includes(el.id)),
+        pages: prev.pages.map((page, i) =>
+          i === currentPageIndex
+            ? { ...page, elements: page.elements.filter((el) => !idsToRemove.includes(el.id)) }
+            : page
+        ),
       }));
       setSelectedIds([]);
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Update background
+  // Update background (for current page)
   const setBackground = useCallback(
-    (background: CanvasData["background"]) => {
+    (background: CanvasBackground) => {
       updateCanvasWithHistory((prev) => ({
         ...prev,
-        background,
+        pages: prev.pages.map((page, i) =>
+          i === currentPageIndex
+            ? { ...page, background }
+            : page
+        ),
       }));
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Bring element(s) to front
+  // Bring element(s) to front (on current page)
   const bringToFront = useCallback(
     (ids: string | string[]) => {
       const idsToMove = Array.isArray(ids) ? ids : [ids];
       updateCanvasWithHistory((prev) => {
-        const maxZ = Math.max(...prev.elements.map((el) => el.zIndex));
+        const currentPage = prev.pages[currentPageIndex];
+        const maxZ = currentPage.elements.length > 0
+          ? Math.max(...currentPage.elements.map((el) => el.zIndex))
+          : 0;
         return {
           ...prev,
-          elements: prev.elements.map((el, idx) =>
-            idsToMove.includes(el.id)
-              ? { ...el, zIndex: maxZ + 1 + idsToMove.indexOf(el.id) }
-              : el
+          pages: prev.pages.map((page, i) =>
+            i === currentPageIndex
+              ? {
+                  ...page,
+                  elements: page.elements.map((el) =>
+                    idsToMove.includes(el.id)
+                      ? { ...el, zIndex: maxZ + 1 + idsToMove.indexOf(el.id) }
+                      : el
+                  ),
+                }
+              : page
           ),
         };
       });
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Send element(s) to back
+  // Send element(s) to back (on current page)
   const sendToBack = useCallback(
     (ids: string | string[]) => {
       const idsToMove = Array.isArray(ids) ? ids : [ids];
       updateCanvasWithHistory((prev) => {
-        const minZ = Math.min(...prev.elements.map((el) => el.zIndex));
+        const currentPage = prev.pages[currentPageIndex];
+        const minZ = currentPage.elements.length > 0
+          ? Math.min(...currentPage.elements.map((el) => el.zIndex))
+          : 0;
         return {
           ...prev,
-          elements: prev.elements.map((el) =>
-            idsToMove.includes(el.id)
-              ? { ...el, zIndex: minZ - 1 - idsToMove.indexOf(el.id) }
-              : el
+          pages: prev.pages.map((page, i) =>
+            i === currentPageIndex
+              ? {
+                  ...page,
+                  elements: page.elements.map((el) =>
+                    idsToMove.includes(el.id)
+                      ? { ...el, zIndex: minZ - 1 - idsToMove.indexOf(el.id) }
+                      : el
+                  ),
+                }
+              : page
           ),
         };
       });
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Apply layout template
+  // Apply layout template (to current page)
   const applyLayout = useCallback(
     (
       generatePositions: (
@@ -400,8 +465,9 @@ export function useCanvasState({
       ) => Array<{ x: number; y: number; width: number; height: number; rotation: number }>
     ) => {
       updateCanvasWithHistory((prev) => {
-        const imageElements = prev.elements.filter((el) => el.type === "image");
-        const otherElements = prev.elements.filter((el) => el.type !== "image");
+        const currentPage = prev.pages[currentPageIndex];
+        const imageElements = currentPage.elements.filter((el) => el.type === "image");
+        const otherElements = currentPage.elements.filter((el) => el.type !== "image");
         const positions = generatePositions(
           imageElements.length,
           prev.width,
@@ -416,15 +482,20 @@ export function useCanvasState({
 
         return {
           ...prev,
-          elements: [...repositionedImages, ...otherElements],
+          pages: prev.pages.map((page, i) =>
+            i === currentPageIndex
+              ? { ...page, elements: [...repositionedImages, ...otherElements] }
+              : page
+          ),
         };
       });
     },
-    [updateCanvasWithHistory]
+    [updateCanvasWithHistory, currentPageIndex]
   );
 
-  // Get selected elements
-  const selectedElements = canvasData.elements.filter((el) => selectedIds.includes(el.id));
+  // Get current page and its selected elements
+  const currentPage = canvasData.pages[currentPageIndex] || canvasData.pages[0];
+  const selectedElements = currentPage.elements.filter((el) => selectedIds.includes(el.id));
 
   // Toggle selection (for ctrl/cmd/shift click)
   const toggleSelection = useCallback((id: string) => {
@@ -448,19 +519,98 @@ export function useCanvasState({
     setSelectedIds(id ? [id] : []);
   }, []);
 
+  // Page management: switch to a different page
+  const goToPage = useCallback((pageIndex: number) => {
+    if (pageIndex >= 0 && pageIndex < canvasData.pages.length) {
+      setCurrentPageIndex(pageIndex);
+      setSelectedIds([]); // Clear selection when switching pages
+    }
+  }, [canvasData.pages.length]);
+
+  // Page management: add a new page after current
+  const addPage = useCallback((background?: CanvasBackground) => {
+    const newPage = createDefaultPage();
+    if (background) {
+      newPage.background = background;
+    }
+    updateCanvasWithHistory((prev) => {
+      const newPages = [...prev.pages];
+      newPages.splice(currentPageIndex + 1, 0, newPage);
+      return { ...prev, pages: newPages };
+    });
+    // Switch to the new page
+    setCurrentPageIndex(currentPageIndex + 1);
+    setSelectedIds([]);
+  }, [updateCanvasWithHistory, currentPageIndex]);
+
+  // Page management: delete a page
+  const deletePage = useCallback((pageIndex: number) => {
+    if (canvasData.pages.length <= 1) return; // Can't delete the last page
+
+    updateCanvasWithHistory((prev) => ({
+      ...prev,
+      pages: prev.pages.filter((_, i) => i !== pageIndex),
+    }));
+
+    // Adjust current page index if needed
+    if (currentPageIndex >= canvasData.pages.length - 1) {
+      setCurrentPageIndex(Math.max(0, canvasData.pages.length - 2));
+    } else if (pageIndex < currentPageIndex) {
+      setCurrentPageIndex(currentPageIndex - 1);
+    }
+    setSelectedIds([]);
+  }, [updateCanvasWithHistory, canvasData.pages.length, currentPageIndex]);
+
+  // Page management: reorder pages
+  const reorderPage = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || toIndex < 0) return;
+    if (fromIndex >= canvasData.pages.length || toIndex >= canvasData.pages.length) return;
+
+    updateCanvasWithHistory((prev) => {
+      const newPages = [...prev.pages];
+      const [moved] = newPages.splice(fromIndex, 1);
+      newPages.splice(toIndex, 0, moved);
+      return { ...prev, pages: newPages };
+    });
+
+    // Update current page index to follow the page if it was moved
+    if (currentPageIndex === fromIndex) {
+      setCurrentPageIndex(toIndex);
+    } else if (fromIndex < currentPageIndex && toIndex >= currentPageIndex) {
+      setCurrentPageIndex(currentPageIndex - 1);
+    } else if (fromIndex > currentPageIndex && toIndex <= currentPageIndex) {
+      setCurrentPageIndex(currentPageIndex + 1);
+    }
+  }, [updateCanvasWithHistory, canvasData.pages.length, currentPageIndex]);
+
   return {
+    // Canvas data
     canvasData,
+    currentPage,
+    currentPageIndex,
+    totalPages: canvasData.pages.length,
+
+    // Selection
     selectedIds,
     selectedElements,
-    isSaving,
-    lastSaved,
-    canUndo,
-    canRedo,
     selectElement,
     toggleSelection,
     addToSelection,
     clearSelection,
     setSelectedIds,
+
+    // Save state
+    isSaving,
+    lastSaved,
+
+    // History
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+
+    // Element operations (on current page)
     updateElement,
     updateElements,
     translateElements,
@@ -470,7 +620,11 @@ export function useCanvasState({
     bringToFront,
     sendToBack,
     applyLayout,
-    undo,
-    redo,
+
+    // Page management
+    goToPage,
+    addPage,
+    deletePage,
+    reorderPage,
   };
 }
