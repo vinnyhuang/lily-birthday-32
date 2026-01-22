@@ -27,8 +27,47 @@ const ALLOWED_IMAGE_TYPES = [
   "image/heic",
   "image/heif",
 ];
+const HEIC_TYPES = ["image/heic", "image/heif"];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_VIDEO_DURATION = 60; // seconds
+
+// Convert HEIC/HEIF to JPEG using Canvas API (works on iOS Safari which can decode HEIC natively)
+function convertHeicToJpeg(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(url);
+          if (!blob) {
+            reject(new Error("Failed to convert image"));
+            return;
+          }
+          const newName = file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg");
+          resolve(new File([blob], newName, { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        0.92
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load HEIC image for conversion"));
+    };
+    img.src = url;
+  });
+}
 
 export function MediaUploader({
   guestId,
@@ -37,11 +76,22 @@ export function MediaUploader({
 }: MediaUploaderProps) {
   const [uploads, setUploads] = useState<Map<string, UploadingFile>>(new Map());
   const [isDragging, setIsDragging] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const log = (msg: string) => {
+    const ts = new Date().toLocaleTimeString();
+    setDebugLog((prev) => [...prev, `[${ts}] ${msg}`]);
+  };
 
   const getFileType = (file: File): "photo" | "video" | null => {
     if (ALLOWED_IMAGE_TYPES.includes(file.type)) return "photo";
     if (ALLOWED_VIDEO_TYPES.includes(file.type)) return "video";
+    // Fallback: check extension for HEIC files (iOS sometimes reports empty type)
+    if (!file.type) {
+      const ext = file.name.toLowerCase().split(".").pop();
+      if (ext === "heic" || ext === "heif") return "photo";
+    }
     return null;
   };
 
@@ -60,9 +110,13 @@ export function MediaUploader({
 
   const uploadFile = async (file: File) => {
     const fileId = `${file.name}-${Date.now()}`;
+    log(`START: "${file.name}" | type="${file.type}" | size=${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
     const fileType = getFileType(file);
+    log(`File type detected: ${fileType ?? "UNSUPPORTED"}`);
 
     if (!fileType) {
+      log(`ERROR: Unsupported file type "${file.type}" ext="${file.name.split(".").pop()}"`);
       setUploads((prev) => {
         const next = new Map(prev);
         next.set(fileId, {
@@ -78,8 +132,10 @@ export function MediaUploader({
 
     // Validate video duration
     if (fileType === "video") {
+      log("Validating video duration...");
       const isValidDuration = await validateVideo(file);
       if (!isValidDuration) {
+        log(`ERROR: Video too long (max ${MAX_VIDEO_DURATION}s)`);
         setUploads((prev) => {
           const next = new Map(prev);
           next.set(fileId, {
@@ -92,14 +148,41 @@ export function MediaUploader({
         });
         return;
       }
+      log("Video duration OK");
     }
 
     // Extract metadata for photos and videos
     let exifData: ExifData | undefined;
     if (fileType === "photo") {
-      exifData = await extractExif(file);
+      log("Extracting EXIF data...");
+      try {
+        exifData = await extractExif(file);
+        log(`EXIF done: date=${exifData?.dateTaken ?? "none"} gps=${exifData?.gpsCoordinates ? "yes" : "none"}`);
+      } catch (err) {
+        log(`EXIF extraction failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
     } else if (fileType === "video") {
-      exifData = await extractVideoMetadata(file);
+      log("Extracting video metadata...");
+      try {
+        exifData = await extractVideoMetadata(file);
+        log(`Video metadata done: date=${exifData?.dateTaken ?? "none"}`);
+      } catch (err) {
+        log(`Video metadata failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    // Convert HEIC/HEIF to JPEG before upload (only Safari can decode HEIC natively)
+    let fileToUpload = file;
+    const ext = file.name.toLowerCase().split(".").pop();
+    const isHeic = HEIC_TYPES.includes(file.type) || ext === "heic" || ext === "heif";
+    if (isHeic && fileType === "photo") {
+      log("HEIC detected, converting to JPEG...");
+      try {
+        fileToUpload = await convertHeicToJpeg(file);
+        log(`HEIC conversion done: newSize=${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB type="${fileToUpload.type}"`);
+      } catch (err) {
+        log(`HEIC conversion FAILED: ${err instanceof Error ? err.message : String(err)} — uploading original`);
+      }
     }
 
     setUploads((prev) => {
@@ -110,53 +193,66 @@ export function MediaUploader({
 
     try {
       // Get presigned URL(s)
+      log(`Requesting presigned URL... (contentType="${fileToUpload.type}", filename="${fileToUpload.name}")`);
       const presignResponse = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
+          filename: fileToUpload.name,
+          contentType: fileToUpload.type,
           guestId,
           type: fileType,
         }),
       });
 
       if (!presignResponse.ok) {
+        const body = await presignResponse.text();
+        log(`ERROR: Presign failed (${presignResponse.status}): ${body}`);
         throw new Error("Failed to get upload URL");
       }
 
       const presignData = await presignResponse.json();
       const { uploadUrl, s3Key } = presignData;
+      log(`Presigned URL received. s3Key="${s3Key}"`);
 
       // For videos, extract and upload thumbnail in parallel with video upload
       let thumbnailBlob: Blob | null = null;
       if (fileType === "video" && presignData.thumbnailUploadUrl) {
+        log("Extracting video thumbnail...");
         try {
           const thumbnailResult = await extractVideoThumbnail(file);
           thumbnailBlob = thumbnailResult.blob;
+          log(`Thumbnail extracted: ${(thumbnailBlob.size / 1024).toFixed(1)}KB`);
         } catch (error) {
-          console.warn("Failed to extract video thumbnail:", error);
-          // Continue without thumbnail - not a fatal error
+          log(`Thumbnail extraction failed: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
 
+      // Read file into ArrayBuffer for S3 upload
+      // (iOS Safari hangs on fetch PUT with raw File body)
+      log("Reading file into ArrayBuffer...");
+      const fileBuffer = await fileToUpload.arrayBuffer();
+      log(`ArrayBuffer ready: ${(fileBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
+
       // Upload to S3 (video/photo and optionally thumbnail)
+      log("Uploading to S3...");
       const uploadPromises: Promise<Response>[] = [
         fetch(uploadUrl, {
           method: "PUT",
-          body: file,
+          body: fileBuffer,
           headers: {
-            "Content-Type": file.type,
+            "Content-Type": fileToUpload.type,
           },
         }),
       ];
 
       // Add thumbnail upload if available
       if (thumbnailBlob && presignData.thumbnailUploadUrl) {
+        const thumbBuffer = await thumbnailBlob.arrayBuffer();
         uploadPromises.push(
           fetch(presignData.thumbnailUploadUrl, {
             method: "PUT",
-            body: thumbnailBlob,
+            body: thumbBuffer,
             headers: {
               "Content-Type": "image/jpeg",
             },
@@ -165,14 +261,17 @@ export function MediaUploader({
       }
 
       const uploadResponses = await Promise.all(uploadPromises);
+      log(`S3 upload response: status=${uploadResponses[0].status} ok=${uploadResponses[0].ok}`);
 
       if (!uploadResponses[0].ok) {
+        const errorText = await uploadResponses[0].text();
+        log(`ERROR: S3 upload failed: ${errorText.substring(0, 200)}`);
         throw new Error("Failed to upload file");
       }
 
       // Log if thumbnail upload failed (non-fatal)
       if (uploadResponses[1] && !uploadResponses[1].ok) {
-        console.warn("Failed to upload thumbnail, continuing without it");
+        log(`WARNING: Thumbnail upload failed (${uploadResponses[1].status})`);
       }
 
       setUploads((prev) => {
@@ -182,7 +281,7 @@ export function MediaUploader({
       });
 
       // Create media record with EXIF data
-      // Note: url field is not used - media is served via /api/image-proxy
+      log("Creating media record...");
       const mediaResponse = await fetch("/api/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -196,9 +295,12 @@ export function MediaUploader({
       });
 
       if (!mediaResponse.ok) {
+        const body = await mediaResponse.text();
+        log(`ERROR: Media record failed (${mediaResponse.status}): ${body}`);
         throw new Error("Failed to save media record");
       }
 
+      log("COMPLETE: Upload successful!");
       setUploads((prev) => {
         const next = new Map(prev);
         next.set(fileId, { file, progress: 100, status: "complete" });
@@ -216,6 +318,7 @@ export function MediaUploader({
 
       onUploadComplete();
     } catch (error) {
+      log(`CATCH ERROR: ${error instanceof Error ? error.message : String(error)}`);
       setUploads((prev) => {
         const next = new Map(prev);
         next.set(fileId, {
@@ -318,6 +421,28 @@ export function MediaUploader({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Debug log panel */}
+      {debugLog.length > 0 && (
+        <div className="mt-4 border border-yellow-400 bg-yellow-50 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-yellow-800">Upload Debug Log</span>
+            <button
+              className="text-xs text-yellow-600 underline"
+              onClick={() => setDebugLog([])}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {debugLog.map((entry, i) => (
+              <p key={i} className="text-[11px] font-mono text-yellow-900 leading-tight py-0.5">
+                {entry}
+              </p>
+            ))}
+          </div>
         </div>
       )}
     </div>
