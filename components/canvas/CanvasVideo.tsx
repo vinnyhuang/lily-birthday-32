@@ -6,6 +6,7 @@ import useImage from "use-image";
 import Konva from "konva";
 import { CanvasVideoElement, SnapResult } from "@/lib/canvas/types";
 import { generateTapeDataUrl, generateFloralOverlayUrl, generateCelebrationOverlayUrl } from "@/lib/canvas/frames";
+import { getThumbnailS3Key, getProxyUrl } from "@/lib/s3";
 
 interface CanvasVideoProps {
   element: CanvasVideoElement;
@@ -87,6 +88,13 @@ export function CanvasVideo({
     [element.width, element.height, element.id]
   );
   const [celebrationOverlay] = useImage(celebrationOverlayUrl);
+
+  // Load thumbnail image for display while video is loading/paused
+  const thumbnailUrl = useMemo(
+    () => getProxyUrl(getThumbnailS3Key(element.s3Key)),
+    [element.s3Key]
+  );
+  const [thumbnailImage] = useImage(thumbnailUrl, "anonymous");
 
   // Animation loop to update canvas when video is playing
   const animate = useCallback(() => {
@@ -172,11 +180,13 @@ export function CanvasVideo({
   };
 
   const handleClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    onSelect(e);
-  };
-
-  const handleDoubleClick = () => {
-    togglePlay();
+    if (isSelected) {
+      // If already selected, toggle play
+      togglePlay();
+    } else {
+      // If not selected, select the element
+      onSelect(e);
+    }
   };
 
   const frameStyle = element.frameStyle || "none";
@@ -335,8 +345,6 @@ export function CanvasVideo({
         draggable
         onClick={handleClick}
         onTap={handleClick}
-        onDblClick={handleDoubleClick}
-        onDblTap={handleDoubleClick}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -361,7 +369,8 @@ export function CanvasVideo({
         {/* Video content - with or without clip mask */}
         {hasClipMask ? (
           <Group x={dims.imageX} y={dims.imageY} clipFunc={clipFunc}>
-            {isLoaded && videoRef.current && (
+            {/* Show video when playing, thumbnail when paused */}
+            {isPlaying && isLoaded && videoRef.current ? (
               <Image
                 ref={imageRef}
                 image={videoRef.current}
@@ -374,16 +383,36 @@ export function CanvasVideo({
                 shadowOffset={{ x: 2, y: 2 }}
                 shadowOpacity={0.5}
               />
+            ) : thumbnailImage ? (
+              <Image
+                image={thumbnailImage}
+                x={0}
+                y={0}
+                width={element.width}
+                height={element.height}
+                shadowColor="rgba(0,0,0,0.2)"
+                shadowBlur={isSelected ? 15 : 8}
+                shadowOffset={{ x: 2, y: 2 }}
+                shadowOpacity={0.5}
+              />
+            ) : (
+              <Rect
+                x={0}
+                y={0}
+                width={element.width}
+                height={element.height}
+                fill="#2a2a2a"
+              />
             )}
             {/* Play button overlay when not playing */}
-            {!isPlaying && isLoaded && (
+            {!isPlaying && (
               <>
                 <Rect
                   x={0}
                   y={0}
                   width={element.width}
                   height={element.height}
-                  fill="rgba(0,0,0,0.3)"
+                  fill="rgba(0,0,0,0.2)"
                 />
                 <Rect
                   x={element.width / 2 - 25}
@@ -405,7 +434,8 @@ export function CanvasVideo({
           </Group>
         ) : (
           <>
-            {isLoaded && videoRef.current && (
+            {/* Show video when playing, thumbnail when paused */}
+            {isPlaying && isLoaded && videoRef.current ? (
               <Image
                 ref={imageRef}
                 image={videoRef.current}
@@ -419,16 +449,38 @@ export function CanvasVideo({
                 shadowOffset={needsFrame ? undefined : { x: 2, y: 2 }}
                 shadowOpacity={needsFrame ? undefined : 0.5}
               />
+            ) : thumbnailImage ? (
+              <Image
+                image={thumbnailImage}
+                x={dims.imageX}
+                y={dims.imageY}
+                width={element.width}
+                height={element.height}
+                cornerRadius={dims.cornerRadius}
+                shadowColor={needsFrame ? undefined : "rgba(0,0,0,0.2)"}
+                shadowBlur={needsFrame ? undefined : (isSelected ? 15 : 8)}
+                shadowOffset={needsFrame ? undefined : { x: 2, y: 2 }}
+                shadowOpacity={needsFrame ? undefined : 0.5}
+              />
+            ) : (
+              <Rect
+                x={dims.imageX}
+                y={dims.imageY}
+                width={element.width}
+                height={element.height}
+                fill="#2a2a2a"
+                cornerRadius={dims.cornerRadius}
+              />
             )}
             {/* Play button overlay when not playing */}
-            {!isPlaying && isLoaded && (
+            {!isPlaying && (
               <>
                 <Rect
                   x={dims.imageX}
                   y={dims.imageY}
                   width={element.width}
                   height={element.height}
-                  fill="rgba(0,0,0,0.3)"
+                  fill="rgba(0,0,0,0.2)"
                   cornerRadius={dims.cornerRadius}
                 />
                 <Rect
@@ -448,29 +500,6 @@ export function CanvasVideo({
                 />
               </>
             )}
-          </>
-        )}
-
-        {/* Loading state */}
-        {!isLoaded && (
-          <>
-            <Rect
-              x={dims.imageX}
-              y={dims.imageY}
-              width={element.width}
-              height={element.height}
-              fill="#2a2a2a"
-              cornerRadius={dims.cornerRadius}
-            />
-            <Text
-              x={dims.imageX + element.width / 2}
-              y={dims.imageY + element.height / 2}
-              text="Loading..."
-              fontSize={14}
-              fill="#888"
-              offsetX={30}
-              offsetY={7}
-            />
           </>
         )}
 

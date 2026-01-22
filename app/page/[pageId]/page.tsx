@@ -238,10 +238,11 @@ export default function PageBuilder() {
             <PhotoMap
               photos={pageData.media
                 .filter((m): m is MediaItem & { latitude: number; longitude: number } =>
-                  m.type === "photo" && m.latitude !== null && m.longitude !== null
+                  m.latitude !== null && m.longitude !== null
                 )
                 .map((m) => ({
                   id: m.id,
+                  type: m.type,
                   url: m.url,
                   s3Key: m.s3Key,
                   caption: m.caption,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { MediaItem } from "@/lib/canvas/types";
 import { Button } from "@/components/ui/button";
-import { getProxyUrl } from "@/lib/s3";
+import { getProxyUrl, getThumbnailS3Key } from "@/lib/s3";
 
 interface PhotoPickerProps {
   media: MediaItem[];
@@ -100,22 +100,14 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
                       : "border-transparent hover:border-primary/50"
                   }`}
                 >
-                  {isVideo ? (
-                    <video
-                      src={item.url}
-                      className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={getProxyUrl(item.s3Key)}
-                      alt={item.caption || "Photo"}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={isVideo
+                      ? getProxyUrl(getThumbnailS3Key(item.s3Key))
+                      : getProxyUrl(item.s3Key)}
+                    alt={item.caption || (isVideo ? "Video" : "Photo")}
+                    className="w-full h-full object-cover"
+                  />
                   {/* Video badge */}
                   {isVideo && (
                     <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -167,22 +159,14 @@ export function PhotoPicker({ media, onCanvasMediaIds, onSelect }: PhotoPickerPr
                   key={item.id}
                   className="aspect-square rounded-lg overflow-hidden border-2 border-muted relative"
                 >
-                  {isVideo ? (
-                    <video
-                      src={item.url}
-                      className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={getProxyUrl(item.s3Key)}
-                      alt={item.caption || "Photo"}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={isVideo
+                      ? getProxyUrl(getThumbnailS3Key(item.s3Key))
+                      : getProxyUrl(item.s3Key)}
+                    alt={item.caption || (isVideo ? "Video" : "Photo")}
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                     <span className="text-white text-xs">On canvas</span>
                   </div>

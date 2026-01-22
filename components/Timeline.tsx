@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, memo } from "react";
-import { getProxyUrl } from "@/lib/s3";
+import { getProxyUrl, getThumbnailS3Key } from "@/lib/s3";
 import { formatDateTaken } from "@/lib/exif/extractExif";
 import {
   Dialog,
@@ -37,24 +37,15 @@ const TimelineItem = memo(function TimelineItem({
   // Media thumbnail component
   const MediaThumbnail = (
     <div className="aspect-square relative overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      {item.type === "photo" ? (
-        <img
-          src={getProxyUrl(item.s3Key)}
-          alt={item.caption || "Memory"}
-          className="absolute inset-0 w-full h-full object-cover"
-          draggable={false}
-          loading="lazy"
-        />
-      ) : (
-        <video
-          src={item.url}
-          className="w-full h-full object-cover"
-          muted
-          playsInline
-          preload="none"
-          draggable={false}
-        />
-      )}
+      <img
+        src={item.type === "video"
+          ? getProxyUrl(getThumbnailS3Key(item.s3Key))
+          : getProxyUrl(item.s3Key)}
+        alt={item.caption || "Memory"}
+        className="absolute inset-0 w-full h-full object-cover"
+        draggable={false}
+        loading="lazy"
+      />
       {item.type === "video" && (
         <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-full">
           🎬
@@ -131,6 +122,12 @@ const TimelineItem = memo(function TimelineItem({
 
 export function Timeline({ media }: TimelineProps) {
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+  const handleSelectMedia = (item: MediaItem) => {
+    setSelectedMedia(item);
+    setIsVideoPlaying(false);
+  };
 
   // Sort media by date taken (oldest first), items without dates go to the end
   const sortedMedia = useMemo(() => {
@@ -174,7 +171,7 @@ export function Timeline({ media }: TimelineProps) {
                 key={item.id}
                 item={item}
                 isTop={index % 2 === 0}
-                onClick={() => setSelectedMedia(item)}
+                onClick={() => handleSelectMedia(item)}
               />
             ))}
           </div>
@@ -201,13 +198,29 @@ export function Timeline({ media }: TimelineProps) {
                     alt={selectedMedia.caption || "Memory"}
                     className="absolute inset-0 w-full h-full object-contain"
                   />
-                ) : (
+                ) : isVideoPlaying ? (
                   <video
                     src={getProxyUrl(selectedMedia.s3Key)}
                     className="w-full h-full"
                     controls
                     autoPlay
                   />
+                ) : (
+                  <div
+                    className="relative w-full h-full cursor-pointer group"
+                    onClick={() => setIsVideoPlaying(true)}
+                  >
+                    <img
+                      src={getProxyUrl(getThumbnailS3Key(selectedMedia.s3Key))}
+                      alt={selectedMedia.caption || "Video thumbnail"}
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                      <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <span className="text-2xl ml-1">▶</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 

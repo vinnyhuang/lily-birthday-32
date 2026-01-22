@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getPresignedUploadUrl, generateS3Key } from "@/lib/s3";
+import { getPresignedUploadUrl, generateS3Key, generateVideoS3Keys } from "@/lib/s3";
 
 const uploadRequestSchema = z.object({
   filename: z.string().min(1),
@@ -54,11 +54,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // For videos, generate both video and thumbnail presigned URLs
+    if (type === "video") {
+      const { videoKey, thumbnailKey } = generateVideoS3Keys(guestId, filename);
+      const [videoUploadUrl, thumbnailUploadUrl] = await Promise.all([
+        getPresignedUploadUrl(videoKey, contentType),
+        getPresignedUploadUrl(thumbnailKey, "image/jpeg"),
+      ]);
+
+      return NextResponse.json({
+        uploadUrl: videoUploadUrl,
+        s3Key: videoKey,
+        thumbnailUploadUrl,
+        thumbnailS3Key: thumbnailKey,
+      });
+    }
+
+    // For photos, just return the single upload URL
     const s3Key = generateS3Key(guestId, filename, type);
     const uploadUrl = await getPresignedUploadUrl(s3Key, contentType);
 
-    // Note: We don't return publicUrl anymore since we use presigned view URLs
-    // The actual view URL is generated when fetching the page data
     return NextResponse.json({
       uploadUrl,
       s3Key,

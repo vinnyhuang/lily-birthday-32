@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { useGoogleMaps } from "@/lib/google/useGoogleMaps";
-import { getProxyUrl } from "@/lib/s3";
+import { getProxyUrl, getThumbnailS3Key } from "@/lib/s3";
 
 interface PhotoLocation {
   id: string;
+  type: "photo" | "video";
   url: string;
   s3Key: string;
   caption: string | null;
@@ -100,9 +101,11 @@ export function PhotoMap({ photos, className = "" }: PhotoMapProps) {
     const container = document.createElement("div");
     container.className = `relative cursor-pointer transition-transform duration-200 ${isSelected ? "scale-125 z-10" : "hover:scale-110"}`;
 
-    // Photo thumbnail
+    // Photo/video thumbnail
     const img = document.createElement("img");
-    img.src = getProxyUrl(photo.s3Key);
+    img.src = photo.type === "video"
+      ? getProxyUrl(getThumbnailS3Key(photo.s3Key))
+      : getProxyUrl(photo.s3Key);
     img.className = "w-12 h-12 rounded-lg object-cover border-2 border-white shadow-lg";
     if (isSelected) {
       img.className += " ring-2 ring-[#E8846E] ring-offset-2";
@@ -215,14 +218,23 @@ export function PhotoMap({ photos, className = "" }: PhotoMapProps) {
         />
       </Card>
 
-      {/* Selected photo info */}
+      {/* Selected photo/video info */}
       {selectedPhoto && (
         <Card className="absolute bottom-4 left-4 right-4 p-3 bg-white/95 backdrop-blur-sm shadow-lg flex items-center gap-3">
-          <img
-            src={getProxyUrl(selectedPhoto.s3Key)}
-            alt={selectedPhoto.caption || "Photo"}
-            className="w-16 h-16 rounded-lg object-cover photo-shadow"
-          />
+          <div className="relative">
+            <img
+              src={selectedPhoto.type === "video"
+                ? getProxyUrl(getThumbnailS3Key(selectedPhoto.s3Key))
+                : getProxyUrl(selectedPhoto.s3Key)}
+              alt={selectedPhoto.caption || (selectedPhoto.type === "video" ? "Video" : "Photo")}
+              className="w-16 h-16 rounded-lg object-cover photo-shadow"
+            />
+            {selectedPhoto.type === "video" && (
+              <div className="absolute bottom-0.5 left-0.5 bg-black/60 text-white text-[8px] px-1 rounded">
+                ▶ Video
+              </div>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             {selectedPhoto.location && (
               <p className="font-medium text-sm truncate flex items-center gap-1">

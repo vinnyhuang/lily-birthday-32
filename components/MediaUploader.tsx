@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { extractExif, extractVideoMetadata, ExifData } from "@/lib/exif/extractExif";
+import { extractVideoThumbnail } from "@/lib/video/extractThumbnail";
 
 interface MediaUploaderProps {
   guestId: string;
@@ -108,7 +109,7 @@ export function MediaUploader({
     });
 
     try {
-      // Get presigned URL
+      // Get presigned URL(s)
       const presignResponse = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,19 +125,54 @@ export function MediaUploader({
         throw new Error("Failed to get upload URL");
       }
 
-      const { uploadUrl, s3Key } = await presignResponse.json();
+      const presignData = await presignResponse.json();
+      const { uploadUrl, s3Key } = presignData;
 
-      // Upload to S3
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
+      // For videos, extract and upload thumbnail in parallel with video upload
+      let thumbnailBlob: Blob | null = null;
+      if (fileType === "video" && presignData.thumbnailUploadUrl) {
+        try {
+          const thumbnailResult = await extractVideoThumbnail(file);
+          thumbnailBlob = thumbnailResult.blob;
+        } catch (error) {
+          console.warn("Failed to extract video thumbnail:", error);
+          // Continue without thumbnail - not a fatal error
+        }
+      }
 
-      if (!uploadResponse.ok) {
+      // Upload to S3 (video/photo and optionally thumbnail)
+      const uploadPromises: Promise<Response>[] = [
+        fetch(uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+          },
+        }),
+      ];
+
+      // Add thumbnail upload if available
+      if (thumbnailBlob && presignData.thumbnailUploadUrl) {
+        uploadPromises.push(
+          fetch(presignData.thumbnailUploadUrl, {
+            method: "PUT",
+            body: thumbnailBlob,
+            headers: {
+              "Content-Type": "image/jpeg",
+            },
+          })
+        );
+      }
+
+      const uploadResponses = await Promise.all(uploadPromises);
+
+      if (!uploadResponses[0].ok) {
         throw new Error("Failed to upload file");
+      }
+
+      // Log if thumbnail upload failed (non-fatal)
+      if (uploadResponses[1] && !uploadResponses[1].ok) {
+        console.warn("Failed to upload thumbnail, continuing without it");
       }
 
       setUploads((prev) => {
@@ -146,7 +182,7 @@ export function MediaUploader({
       });
 
       // Create media record with EXIF data
-      // Note: url is not stored - we generate presigned view URLs on demand
+      // Note: url field is not used - media is served via /api/image-proxy
       const mediaResponse = await fetch("/api/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

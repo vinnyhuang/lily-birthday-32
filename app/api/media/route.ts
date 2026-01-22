@@ -62,11 +62,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create media record (url field is not stored - we generate presigned URLs on demand)
+    // Create media record (url field is legacy - media is served via /api/image-proxy)
     const media = await db.media.create({
       data: {
         s3Key,
-        url: "", // Placeholder - actual URLs are generated via presigned URLs
+        url: "", // Legacy field - actual URLs are generated via proxy
         pageId,
         type,
         caption,

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { LocationAutocomplete } from "@/components/upload/LocationAutocomplete";
 import { formatDateTaken } from "@/lib/exif/extractExif";
-import { getProxyUrl } from "@/lib/s3";
+import { getProxyUrl, getThumbnailS3Key } from "@/lib/s3";
 import { Calendar } from "lucide-react";
 
 export interface MediaItem {
@@ -49,9 +49,11 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const openEditDialog = (item: MediaItem) => {
     setSelectedMedia(item);
+    setIsVideoPlaying(false);
     setEditCaption(item.caption || "");
     setEditLocation(item.location || "");
     setEditCoordinates(
@@ -118,26 +120,13 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
             onClick={() => openEditDialog(item)}
             style={{ transform: `rotate(${(index % 4 - 1.5) * 1}deg)` }}
           >
-            {item.type === "photo" ? (
-              <img
-                src={getProxyUrl(item.s3Key)}
-                alt={item.caption || "Memory"}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <video
-                src={item.url}
-                className="w-full h-full object-cover"
-                muted
-                playsInline
-                preload="metadata"
-                onMouseEnter={(e) => e.currentTarget.play()}
-                onMouseLeave={(e) => {
-                  e.currentTarget.pause();
-                  e.currentTarget.currentTime = 0;
-                }}
-              />
-            )}
+            <img
+              src={item.type === "photo"
+                ? getProxyUrl(item.s3Key)
+                : getProxyUrl(getThumbnailS3Key(item.s3Key))}
+              alt={item.caption || "Memory"}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity">
               {item.caption && (
@@ -210,12 +199,29 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
                     alt={selectedMedia.caption || "Memory"}
                     className="absolute inset-0 w-full h-full object-contain"
                   />
-                ) : (
+                ) : isVideoPlaying ? (
                   <video
                     src={getProxyUrl(selectedMedia.s3Key)}
                     className="w-full h-full"
                     controls
+                    autoPlay
                   />
+                ) : (
+                  <div
+                    className="relative w-full h-full cursor-pointer group"
+                    onClick={() => setIsVideoPlaying(true)}
+                  >
+                    <img
+                      src={getProxyUrl(getThumbnailS3Key(selectedMedia.s3Key))}
+                      alt={selectedMedia.caption || "Video thumbnail"}
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                      <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <span className="text-2xl ml-1">▶</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
