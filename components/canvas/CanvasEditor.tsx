@@ -163,8 +163,8 @@ export function CanvasEditor({
   const onGuideDragEnd = () => {};
 
   // Responsive sizing with visibility detection
-  // Side panels: left toolbar (40+12) + right options (240+12) + page padding (32) + breathing room
-  const sideSpace = 370;
+  // Reserve symmetric space on both sides (2 * right panel width+margin = 2*252)
+  const sideSpace = 504;
 
   useEffect(() => {
     const updateDimensions = () => {
